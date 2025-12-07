@@ -1,6 +1,6 @@
 flask
+gunicorn
 matplotlib
 numpy
 reportlab
-gunicorn
-
+pandas
