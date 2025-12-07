@@ -1,56 +1,115 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>恒星光谱分类（网页版）</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恒星光谱分析工具</title>
+
+    <!-- 星空主题 CSS -->
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: auto;
-            padding: 30px;
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a 70%);
+            font-family: "Microsoft Yahei", sans-serif;
+            color: white;
         }
-        .card {
-            background: #f8f8f8;
+
+        /* 页面居中容器 */
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
             padding: 25px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(50, 110, 255, 0.4);
+            backdrop-filter: blur(6px);
         }
+
+        /* 标题 */
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 12px #7bbdff;
+        }
+
+        label {
+            font-size: 18px;
+            display: block;
+            margin-top: 10px;
+        }
+
         input {
-            padding: 8px;
-            width: 200px;
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
         }
+
+        /* 按钮 */
         button {
-            padding: 10px 15px;
-        }
-        img {
+            width: 100%;
             margin-top: 20px;
-            max-width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            color: white;
+            background: linear-gradient(135deg, #3e8cff, #6a5acd);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 12px rgba(90, 150, 255, 0.6);
         }
+
+        button:hover {
+            box-shadow: 0 0 20px rgba(120, 180, 255, 0.9);
+            transform: scale(1.03);
+        }
+
+        /* 结果与图像区域 */
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        img {
+            margin-top: 15px;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 0 18px rgba(120,150,255,0.6);
+        }
+
     </style>
 </head>
 <body>
 
-<h2>恒星光谱分类与 HR 图在线工具</h2>
+    <div class="container">
+        <h1>🌟 恒星光谱分析工具</h1>
 
-<div class="card">
-    <form method="POST" action="/" enctype="multipart/form-data">
-        <label>请输入恒星温度 (K)：</label><br><br>
-        <input type="text" name="temp" required>
-        <button type="submit">开始分析</button>
-    </form>
-</div>
+        <form action="/" method="post">
+            <label>温度（K）</label>
+            <input type="number" name="temperature" required>
 
-{% if spectral_type %}
-<hr>
-<h3>分析结果</h3>
-<p><strong>光谱类型：</strong> {{ spectral_type }}</p>
-<p><strong>质量：</strong> {{ mass }}</p>
-<p><strong>半径：</strong> {{ radius }}</p>
-<p><strong>光度：</strong> {{ luminosity }}</p>
+            <label>光度（L / L☉）</label>
+            <input type="number" name="luminosity" step="0.01" required>
 
-<h3>H–R 图</h3>
-<img src="data:image/png;base64,{{ plot_data }}" alt="HR">
-{% endif %}
+            <button type="submit">生成赫罗图 HR Diagram</button>
+        </form>
+
+        {% if hr_image %}
+        <div class="result">
+            <h3>分析结果</h3>
+            <img src="data:image/png;base64,{{ hr_image }}">
+        </div>
+        {% endif %}
+    </div>
 
 </body>
 </html>
