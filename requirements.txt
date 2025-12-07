@@ -1,4 +1,6 @@
 flask
-numpy
 matplotlib
+numpy
+reportlab
 gunicorn
+
