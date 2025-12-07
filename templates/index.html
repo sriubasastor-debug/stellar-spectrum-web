@@ -15,26 +15,26 @@
         }
 
         .container {
-            max-width: 650px;
-            margin: 40px auto;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            box-shadow: 0 0 25px rgba(50, 110, 255, 0.4);
-            backdrop-filter: blur(6px);
+            max-width: 750px;
+            margin: 32px auto;
+            padding: 22px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            box-shadow: 0 0 30px rgba(50, 110, 255, 0.25);
+            backdrop-filter: blur(5px);
         }
 
         h1 {
             text-align: center;
             font-size: 30px;
-            margin-bottom: 25px;
-            text-shadow: 0 0 12px #7bbdff;
+            margin-bottom: 18px;
+            text-shadow: 0 0 10px #7bbdff;
         }
 
         label {
-            font-size: 18px;
+            font-size: 16px;
             display: block;
-            margin-top: 15px;
+            margin-top: 12px;
         }
 
         input, select {
@@ -43,52 +43,71 @@
             margin-top: 6px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             outline: none;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
         button {
             width: 100%;
-            margin-top: 25px;
-            padding: 14px;
-            font-size: 18px;
+            margin-top: 18px;
+            padding: 12px;
+            font-size: 17px;
             color: white;
             background: linear-gradient(135deg, #3e8cff, #6a5acd);
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 0 12px rgba(90, 150, 255, 0.6);
+            transition: 0.25s;
+            box-shadow: 0 0 12px rgba(90, 150, 255, 0.5);
         }
 
         button:hover {
-            box-shadow: 0 0 20px rgba(120, 180, 255, 0.9);
-            transform: scale(1.03);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(120, 180, 255, 0.8);
         }
 
         .result {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
+            margin-top: 22px;
+            padding: 16px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
             text-align: center;
         }
 
-        img {
-            margin-top: 15px;
-            width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 0 18px rgba(120,150,255,0.6);
+        .error {
+            margin-top: 14px;
+            padding: 10px;
+            background: rgba(255,80,80,0.12);
+            border-radius: 8px;
+            color: #ffdddd;
         }
+
+        .meta {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+
+        img {
+            margin-top: 12px;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 0 16px rgba(120,150,255,0.45);
+        }
+
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>🌟 恒星光谱分析工具</h1>
+        <h1>🌌 恒星光谱分析工具</h1>
 
         <form action="/" method="post">
-
             <label>选择光谱类型（O~M）</label>
             <select name="spectral_dropdown">
                 <option value="">不选择</option>
@@ -101,25 +120,38 @@
                 <option value="M">M</option>
             </select>
 
-            <label>输入完整光谱类型（可选，如 G2V / K5III）</label>
+            <label>或输入完整光谱类型（可选，如 G2V / K5III）</label>
             <input type="text" name="spectral_text" placeholder="例如：G2V">
 
-            <label>温度（K）如果你填写，将覆盖光谱推算</label>
-            <input type="number" name="temperature">
+            <div class="two-col">
+                <div>
+                    <label>温度（K）（若填写，将覆盖光谱推算）</label>
+                    <input type="number" name="temperature" placeholder="可选">
+                </div>
+                <div>
+                    <label>光度（L / L☉）</label>
+                    <input type="number" name="luminosity" step="0.01" placeholder="例如：1.0" required>
+                </div>
+            </div>
 
-            <label>光度（L / L☉）</label>
-            <input type="number" name="luminosity" step="0.01" required>
-
-            <button type="submit">生成赫罗图 HR Diagram</button>
+            <button type="submit">生成赫罗图并分类</button>
         </form>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
 
         {% if hr_image %}
         <div class="result">
             <h3>分析结果</h3>
-            <img src="data:image/png;base64,{{ hr_image }}">
+            <div class="meta">
+                使用温度：<strong>{{ used_temp }} K</strong><br>
+                简单分类：<strong>{{ simple_class }}</strong><br>
+                专业分类（基于 H–R）：<strong>{{ professional_class }}</strong>
+            </div>
+            <img src="data:image/png;base64,{{ hr_image }}" alt="HR 图">
         </div>
         {% endif %}
     </div>
-
 </body>
 </html>
