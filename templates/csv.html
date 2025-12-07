@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV 批量分析</title>
+<style>
+body{
+    background:radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a);
+    color:white;
+    font-family:"Microsoft Yahei";
+}
+.container{
+    max-width:700px;
+    margin:40px auto;
+    padding:25px;
+    background:rgba(255,255,255,0.06);
+    border-radius:14px;
+}
+button{
+    width:100%; padding:12px;
+    margin-top:15px;
+    background:linear-gradient(135deg,#3e8cff,#6a5acd);
+    color:white; border:none; border-radius:10px;
+    font-size:16px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>📄 CSV 批量分析 ➜ PDF 报告</h2>
+
+<form method="post" enctype="multipart/form-data">
+    <label>选择 CSV 文件</label>
+    <input type="file" name="csvfile" accept=".csv" required>
+    <button type="submit">生成 PDF 报告</button>
+</form>
+
+<p style="margin-top:15px; opacity:0.9;">
+CSV 至少需包含 “luminosity” 列。可选：spectral、temperature。
+</p>
+</div>
+</body>
+</html>

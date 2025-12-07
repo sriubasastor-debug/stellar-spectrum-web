@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单星分析</title>
+<style>
+body{
+    background:radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a);
+    color:white;
+    font-family:"Microsoft Yahei";
+}
+.container{
+    max-width:700px;
+    margin:40px auto;
+    background:rgba(255,255,255,0.06);
+    padding:25px;
+    border-radius:14px;
+}
+input,select{
+    width:100%; padding:10px;
+    margin-top:6px;
+    border:none; border-radius:8px;
+}
+button{
+    width:100%; padding:12px;
+    margin-top:15px;
+    background:linear-gradient(135deg,#3e8cff,#6a5acd);
+    color:white; border:none; border-radius:10px;
+    font-size:16px;
+}
+img{
+    margin-top:20px;
+    width:100%; border-radius:9px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>🔭 单颗恒星分析</h2>
+
+<form method="post">
+    <label>光谱类型（如 G2）</label>
+    <input type="text" name="spectral">
+
+    <label>温度（可选，会覆盖光谱）</label>
+    <input type="number" name="temperature">
+
+    <label>光度（L☉）</label>
+    <input type="number" name="luminosity" required>
+
+    <button type="submit">生成分析</button>
+</form>
+
+{% if result %}
+<div style="margin-top:15px;">{{ result | safe }}</div>
+{% endif %}
+
+{% if hr_image %}
+<img src="data:image/png;base64,{{ hr_image }}">
+{% endif %}
+</div>
+</body>
+</html>
