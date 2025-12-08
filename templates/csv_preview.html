@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV 批量分析 - 预览</title>
+    <style>
+        body {
+            background: #0f0f1a;
+            color: white;
+            font-family: "Microsoft YaHei", sans-serif;
+            padding: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid gray;
+            text-align: center;
+        }
+        th {
+            background: #4ea3ff;
+            color: white;
+        }
+        .button {
+            background: #4ea3ff;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .button:hover{ background:#77bbff; }
+        .center { text-align: center; }
+    </style>
+</head>
+
+<body>
+
+<h1>CSV 批量分析结果</h1>
+<p>共 {{ stats.total }} 颗恒星</p>
+
+<table>
+    <tr>
+        <th>编号</th>
+        <th>光谱</th>
+        <th>温度</th>
+        <th>光度</th>
+        <th>分类</th>
+    </tr>
+    {% for row in preview_table %}
+    <tr>
+        <td>{{ row.index }}</td>
+        <td>{{ row.spectral }}</td>
+        <td>{{ row.temperature }}</td>
+        <td>{{ row.luminosity }}</td>
+        <td>{{ row.professional }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<div class="center">
+    <h2>综合 H–R 图</h2>
+    <img src="data:image/png;base64,{{ hr_image }}" style="width:80%;">
+</div>
+
+<div class="center">
+    <form method="POST" action="/generate_pdf">
+        <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
+        <input type="hidden" name="original_name" value="{{ original_name }}">
+        <button class="button">生成 PDF 报告</button>
+    </form>
+</div>
+
+</body>
+</html>
