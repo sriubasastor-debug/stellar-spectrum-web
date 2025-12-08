@@ -1,7 +1,7 @@
-flask
-matplotlib
-numpy
-pillow
-reportlab
-pandas
-imageio
+flask==3.0.0
+matplotlib==3.8.2
+numpy==1.26.2
+pillow==10.1.0
+reportlab==4.0.6
+imageio==2.31.1
+gunicorn==21.2.0
