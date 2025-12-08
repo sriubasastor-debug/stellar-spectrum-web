@@ -1,10 +1,20 @@
 # app.py — 全功能版：修复字体、修复渲染、单星/CSV/动画/PDF/H-R 图 全支持
 from flask import Flask, render_template, request, send_file, redirect, url_for, Response
+# ---------- Matplotlib 中文强制字体加载 ----------
 import matplotlib
-matplotlib.use('Agg')  # 无界面环境
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
-import matplotlib.font_manager as fm
+from matplotlib import font_manager as fm
+
+FONT_PATH = "static/fonts/NotoSansSC-Regular.ttf"  # 你的 ttf 文件路径
+
+# 将字体注册给 Matplotlib
+fm.fontManager.addfont(FONT_PATH)
+
+# 设置全局字体
+plt.rcParams["font.family"] = "NotoSansSC-Regular"
+plt.rcParams["axes.unicode_minus"] = False
+
 import numpy as np
 import base64
 from io import BytesIO, StringIO
@@ -599,3 +609,4 @@ if __name__ == '__main__':
     if not os.path.exists(FONT_PATH):
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.otf not found. Matplotlib may fallback to default fonts.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
