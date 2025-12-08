@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, send_file, redirect, url_for
 import matplotlib
+# 使用 SimHei 字体，支持中文
+matplotlib.rcParams['font.sans-serif'] = ['SimHei']
+matplotlib.rcParams['axes.unicode_minus'] = False
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -333,3 +336,4 @@ def csv_page():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
