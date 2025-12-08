@@ -1,8 +1,7 @@
 flask
-gunicorn
 matplotlib
 numpy
-reportlab
 pillow
+reportlab
 pandas
-
+imageio
