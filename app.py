@@ -363,6 +363,8 @@ def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
 # ============================================================
 # 生成演化 GIF（示意轨迹）
 # ============================================================
+import imageio.v2 as imageio   # NEW: safer GIF encoder
+
 def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
     steps = 60
     temps = []
@@ -375,63 +377,64 @@ def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
     T0 = init_temp if init_temp else T_SUN
     L0 = init_lum if init_lum else 1.0
 
+    # --- generate evolution path ---
     for i in range(steps):
         frac = i / (steps - 1)
+
         if m < 1.0:
-            T = T0 * (1 - 0.2 * frac)
-            L = L0 * (1 - 0.8 * frac)
-            if frac > 0.7:
-                T = T0 * (0.5 + 0.5 * (1 - frac))
-                L = max(1e-4, L0 * (0.05 * (1 - (frac - 0.7) / 0.3)))
+            T = T0 * (1 - 0.2*frac)
+            L = L0 * (1 - 0.8*frac)
         elif m < 8.0:
             if frac < 0.5:
-                T = T0 * (1 - 0.4 * (frac / 0.5))
-                L = L0 * (1 + 200 * (frac / 0.5))
+                T = T0 * (1 - 0.4*(frac/0.5))
+                L = L0 * (1 + 200*(frac/0.5))
             else:
-                ff = (frac - 0.5) / 0.5
-                T = T0 * (0.6 + 0.4 * (1 - ff))
-                L = L0 * (1 + 200 * (1 - ff)) * 0.1
+                ff = (frac - 0.5)/0.5
+                T = T0 * (0.6 + 0.4*(1-ff))
+                L = L0 * (1 + 200*(1-ff)) * 0.1
         else:
             if frac < 0.5:
-                T = T0 * (1 + 0.6 * (frac / 0.5))
-                L = L0 * (1 + 1e4 * (frac / 0.5))
+                T = T0 * (1 + 0.6*(frac/0.5))
+                L = L0 * (1 + 1e4*(frac/0.5))
             else:
-                ff = (frac - 0.5) / 0.5
-                T = T0 * (1 + 0.6 * (1 - ff))
-                L = max(1e-4, L0 * (1e4 * (1 - ff)))
+                ff = (frac - 0.5)/0.5
+                T = T0 * (1 + 0.6*(1-ff))
+                L = L0 * (1e4 * (1-ff))
+
         temps.append(max(1000, T))
         lums.append(max(1e-8, L))
 
-    # render frames
-    fig, ax = plt.subplots(figsize=(6, 5), facecolor='#0f0f1a')
-    ax.set_facecolor('#0f0f1a')
-    tgrid = np.logspace(np.log10(2500), np.log10(40000), 400)
-    Lms = 1e-4 * (tgrid ** 3.5)
-    ax.plot(tgrid, Lms, color='#80cfff', linewidth=1.5)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlim(40000, 2500)
-    ax.set_ylim(1e-6, 1e6)
-    scat = ax.scatter([], [], c='red', s=60, edgecolors='white')
-
+    # --- render HR diagram frames ---
     frames = []
-    for (T, L) in zip(temps, lums):
-        scat.set_offsets([[T, L]])
-        fig.canvas.draw()
-        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
-        w, h = fig.canvas.get_width_height()
-        image = image.reshape((h, w, 3))
-        frames.append(Image.fromarray(image))
+    for T, L in zip(temps, lums):
+        fig, ax = plt.subplots(figsize=(6,5), facecolor='#0f0f1a')
+        ax.set_facecolor('#0f0f1a')
 
-    # save to temp file
-    with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as tmpf:
-        tmpname = tmpf.name
-    frames[0].save(tmpname, save_all=True, append_images=frames[1:], duration=80, loop=0)
-    plt.close(fig)
-    with open(tmpname, 'rb') as f:
-        data = f.read()
-    os.remove(tmpname)
-    return data
+        tgrid = np.logspace(np.log10(2500), np.log10(40000), 400)
+        Lms = 1e-4 * (tgrid ** 3.5)
+        ax.plot(tgrid, Lms, color="#80cfff", linewidth=1.3)
+
+        ax.scatter([T], [L], s=80, color="red", edgecolors="white", linewidth=1.1)
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlim(40000, 2500)
+        ax.set_ylim(1e-6, 1e6)
+        ax.grid(True, ls=":", alpha=0.25)
+        ax.tick_params(colors="white")
+
+        buf = BytesIO()
+        fig.savefig(buf, format="png", dpi=120)
+        buf.seek(0)
+        frames.append(imageio.imread(buf))  # use imageio safe reader
+        plt.close(fig)
+
+    # --- generate gif safely (imageio handles all encoding) ---
+    gif_bytes = BytesIO()
+    imageio.mimsave(gif_bytes, frames, format="GIF", duration=0.1)
+    gif_bytes.seek(0)
+
+    return gif_bytes.getvalue()
 
 
 # ============================================================
@@ -574,3 +577,4 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
