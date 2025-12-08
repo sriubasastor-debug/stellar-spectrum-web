@@ -1,44 +1,50 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSV 批量分析</title>
-<style>
-body{
-    background:radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a);
-    color:white;
-    font-family:"Microsoft Yahei";
-}
-.container{
-    max-width:700px;
-    margin:40px auto;
-    padding:25px;
-    background:rgba(255,255,255,0.06);
-    border-radius:14px;
-}
-button{
-    width:100%; padding:12px;
-    margin-top:15px;
-    background:linear-gradient(135deg,#3e8cff,#6a5acd);
-    color:white; border:none; border-radius:10px;
-    font-size:16px;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>批量 CSV 分析</title>
+    <style>
+        body {
+            background: #0f0f1a;
+            color: white;
+            font-family: "Microsoft YaHei", sans-serif;
+            text-align: center;
+            padding: 60px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 8px;
+        }
+        button {
+            background: #4ea3ff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+        }
+        button:hover { background: #77bbff; }
+        .box {
+            background: #1b1b2d;
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+    </style>
 </head>
+
 <body>
-<div class="container">
-<h2>📄 CSV 批量分析 ➜ PDF 报告</h2>
 
-<form method="post" enctype="multipart/form-data">
-    <label>选择 CSV 文件</label>
-    <input type="file" name="csvfile" accept=".csv" required>
-    <button type="submit">生成 PDF 报告</button>
-</form>
+<h1>批量 CSV 恒星分析</h1>
 
-<p style="margin-top:15px; opacity:0.9;">
-CSV 至少需包含 “luminosity” 列。可选：spectral、temperature。
-</p>
+<div class="box">
+    <form method="POST" enctype="multipart/form-data">
+        <p>请上传 CSV 文件（包含 spectral/temperature/luminosity）</p>
+
+        <input type="file" name="csvfile" accept=".csv" required>
+        <br><br>
+        <button type="submit">上传并分析</button>
+    </form>
 </div>
+
 </body>
 </html>
