@@ -3,4 +3,6 @@ gunicorn
 matplotlib
 numpy
 reportlab
+pillow
 pandas
+
