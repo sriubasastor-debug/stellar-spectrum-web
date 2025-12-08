@@ -1,114 +1,63 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CSV 预览 • 交互式表格</title>
-
-<!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css" />
-<!-- AOS -->
-<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-<!-- fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<style>
-body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);color:#eaf2ff;font-family:Inter, "Microsoft Yahei"}
-.container{max-width:1200px;margin:18px auto;padding:18px}
-.header{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:16px;border-radius:12px}
-.dt-container{margin-top:12px;overflow:auto;border-radius:8px;padding:8px;background:rgba(0,0,0,0.04)}
-table.dataTable thead th{background:#12243f;color:#fff}
-.button{background:linear-gradient(90deg,#6ea8ff,#7b61ff);padding:10px 14px;border-radius:10px;color:white;border:none;font-weight:600}
-.small{font-size:13px;color:#9fb4d9}
-.hrwrap{margin-top:16px;text-align:center}
-.img-hr{max-width:100%;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-@media (max-width:900px){.header{flex-direction:column;align-items:flex-start}}
-</style>
+    <meta charset="UTF-8">
+    <title>{{ t('csv') }}</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <style>
+        body{ background:#0f0f1a;color:white;font-family:Arial;padding:20px; }
+        table { color:white; }
+        img{ margin-top:20px;border:2px solid #666; }
+        .btn { background:#3e8cff;color:white;padding:8px 18px;border-radius:6px;text-decoration:none; }
+        .lang { position:absolute;top:15px;right:20px; }
+        .lang a { color:#3e8cff;margin-left:8px;text-decoration:none; }
+    </style>
 </head>
 <body>
-<div class="container" data-aos="fade-up">
-  <div class="header">
-    <div>
-      <h1>📊 星表预览</h1>
-      <div class="small">源文件：<strong>{{ original_name }}</strong> · 共 <strong>{{ stats.total }}</strong> 行</div>
+    <div class="lang">
+        <a href="/csv?lang=zh">中文</a> | <a href="/csv?lang=en">EN</a>
     </div>
 
-    <div class="controls">
-      <form method="post" action="/generate_pdf" style="display:inline">
-        <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
-        <input type="hidden" name="original_name" value="{{ original_name }}">
-        <button class="button" type="submit">✅ 生成 PDF 报告并下载</button>
-      </form>
-      <a href="/csv" class="button" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:#cfe4ff;text-decoration:none">🔙 返回上传</a>
-    </div>
-  </div>
+    <h1>{{ t('csv') }}</h1>
 
-  <div class="card" style="margin-top:12px">
-    <div class="dt-container">
-      <table id="preview-table" class="display responsive nowrap" style="width:100%;color:#eaf2ff">
+    <table id="table" class="display">
         <thead>
-          <tr>
-            <th>编号</th>
-            <th>光谱</th>
-            <th>温度 (K)</th>
-            <th>光度 (L☉)</th>
-            <th>简单分类</th>
-            <th>专业分类</th>
-          </tr>
+            <tr>
+                <th>#</th>
+                <th>{{ t('spectrum') }}</th>
+                <th>{{ t('temperature') }}</th>
+                <th>{{ t('luminosity') }}</th>
+                <th>{{ t('class') }}</th>
+            </tr>
         </thead>
         <tbody>
-          {% for row in preview_table %}
-          <tr>
-            <td>{{ row.index }}</td>
-            <td>{{ row.spectral or '—' }}</td>
-            <td>{% if row.temperature is none %}—{% else %}{{ '%.1f'|format(row.temperature) }}{% endif %}</td>
-            <td>{% if row.luminosity is none %}—{% else %}{{ '%.4g'|format(row.luminosity) }}{% endif %}</td>
-            <td>{{ row.simple }}</td>
-            <td>{{ row.professional }}</td>
-          </tr>
-          {% endfor %}
+            {% for r in preview_table %}
+            <tr>
+                <td>{{ r.index }}</td>
+                <td>{{ r.spectral }}</td>
+                <td>{{ r.temperature }}</td>
+                <td>{{ r.luminosity }}</td>
+                <td>{{ r.professional }}</td>
+            </tr>
+            {% endfor %}
         </tbody>
-      </table>
-    </div>
+    </table>
 
-    <div class="hrwrap" style="margin-top:18px">
-      <h3>综合 H–R 图</h3>
-      {% if hr_image %}
-        <img class="img-hr" src="data:image/png;base64,{{ hr_image }}" alt="HR 图">
-      {% else %}
-        <div class="small" style="padding:18px;background:rgba(255,255,255,0.02);border-radius:8px;color:#cfe4ff">后端未返回 HR 图（如果没有，请稍后生成报告或确认后端 plot_hr_multi 是否被调用）</div>
-      {% endif %}
-    </div>
-  </div>
-</div>
+    <h2>H–R 图</h2>
+    <img src="data:image/png;base64,{{ hr_image }}" width="560">
 
-<!-- JS libs -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <form method="POST" action="/generate_pdf?lang={{lang}}">
+        <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
+        <input type="hidden" name="original_name" value="{{ original_name }}">
+        <button class="btn" type="submit">生成 PDF</button>
+    </form>
 
-<script>
-AOS.init({duration:600,once:true});
-
-// DataTable init with Chinese UI
-$(document).ready(function(){
-  $('#preview-table').DataTable({
-    responsive: true,
-    pageLength: 25,
-    order: [[0,"asc"]],
-    language: {
-      "search": "搜索：",
-      "lengthMenu": "每页显示 _MENU_ 条",
-      "info": "显示 _START_ 到 _END_ / _TOTAL_ 条",
-      "paginate": { "first": "首页", "last": "尾页", "next": "下一页", "previous": "上一页" },
-      "zeroRecords": "未找到匹配记录"
-    }
-  });
-});
-</script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready( function () {
+            $('#table').DataTable();
+        });
+    </script>
 </body>
 </html>
