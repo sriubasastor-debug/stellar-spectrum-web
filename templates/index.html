@@ -1,36 +1,164 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>恒星光谱与 H-R 图分析</title>
-    <style>
-        body {
-            background: #0f0f1a;
-            color: white;
-            font-family: "Microsoft YaHei", sans-serif;
-            text-align: center;
-            padding: 60px;
-        }
-        a.button {
-            display: inline-block;
-            padding: 15px 40px;
-            background: #4ea3ff;
-            color: white;
-            text-decoration: none;
-            border-radius: 10px;
-            margin: 20px;
-            font-size: 20px;
-        }
-        a.button:hover { background: #77bbff; }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>恒星光谱与 H–R 分析 • 星辰工作台</title>
+
+<!-- AOS 动画 -->
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+<!-- Google 字体（替代）-->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg-1:#071028;
+  --bg-2:#0f1b3a;
+  --card:#0f1724aa;
+  --accent:#6ea8ff;
+  --accent-2:#7b61ff;
+  --glass: rgba(255,255,255,0.04);
+  --muted: #9fb4d9;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: "Inter", "Microsoft Yahei", sans-serif;
+  background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.08), transparent 10%),
+              radial-gradient(1000px 500px at 90% 85%, rgba(30,64,175,0.06), transparent 10%),
+              linear-gradient(180deg,var(--bg-1),var(--bg-2));
+  color:#eaf2ff;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding:40px 16px;
+}
+
+/* 容器 */
+.container{
+  max-width:1050px;
+  margin:0 auto;
+}
+
+/* 顶部 card */
+.hero{
+  display:flex;
+  gap:20px;
+  align-items:center;
+  padding:22px;
+  border-radius:16px;
+  background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  backdrop-filter: blur(6px);
+}
+
+/* logo circle */
+.logo{
+  width:88px;height:88px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(124,58,237,0.24);
+  transform: translateY(0);
+}
+.logo h1{margin:0;font-size:28px;color:white;letter-spacing: -1px}
+.hero .meta{flex:1}
+.hero h2{margin:0;font-size:20px}
+.hero p{margin:6px 0 0;color:var(--muted)}
+
+/* 操作按钮组 */
+.actions{
+  display:flex;
+  gap:14px;
+  margin-top:18px;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:12px 18px;border-radius:12px;
+  color:white;text-decoration:none;font-weight:600;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  box-shadow:0 8px 24px rgba(79, 123, 255, 0.12);
+  transition:transform .22s ease, box-shadow .22s ease;
+}
+.btn.secondary{
+  background:transparent;border:1px solid rgba(255,255,255,0.06); color:var(--muted);
+  box-shadow:none;
+}
+.btn:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(60,100,200,0.16)}
+.small{font-size:14px;padding:9px 14px;border-radius:10px}
+
+/* cards grid */
+.grid{
+  margin-top:26px;
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap:16px;
+}
+
+/* feature card */
+.feature{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  padding:16px;border-radius:12px;
+  box-shadow: 0 8px 20px rgba(3,10,30,0.6);
+}
+.feature h3{margin:0 0 6px}
+.feature p{margin:0;color:var(--muted);font-size:14px}
+
+/* footer */
+.footer{margin-top:28px;text-align:center;color:var(--muted);font-size:13px}
+
+/* responsive */
+@media (max-width:640px){
+  .hero{flex-direction:column;align-items:flex-start}
+  .logo{width:64px;height:64px}
+}
+</style>
 </head>
 <body>
+  <div class="container">
+    <div class="hero" data-aos="fade-up">
+      <div class="logo" id="logo">
+        <h1>⭐</h1>
+      </div>
+      <div class="meta">
+        <h2>恒星光谱与 H–R 分析 • 星辰工作台</h2>
+        <p>单星分析 • 批量 CSV → PDF 报告 • 交互式预览 • 专业 H–R 可视化</p>
 
-    <h1>恒星光谱与赫罗图分析系统</h1>
-    <p>请选择操作方式</p>
+        <div class="actions" style="margin-top:12px">
+          <a class="btn" href="/single">🔭 单星分析</a>
+          <a class="btn secondary" href="/csv">📄 批量 CSV（上传/预览/报告）</a>
+        </div>
+      </div>
+    </div>
 
-    <a class="button" href="/single">单颗恒星分析</a>
-    <a class="button" href="/csv">批量 CSV 分析（含 PDF 报告）</a>
+    <div class="grid" style="margin-top:20px">
+      <div class="feature" data-aos="fade-up" data-aos-delay="60">
+        <h3>交互式星表预览</h3>
+        <p>上传 CSV 后即可在浏览器内查看、搜索、排序并生成 PDF 报告。</p>
+      </div>
 
+      <div class="feature" data-aos="fade-up" data-aos-delay="120">
+        <h3>专业 H–R 视觉化</h3>
+        <p>主序带 / 巨星区 / 白矮星区高亮，点位按分类着色并带中文标签。</p>
+      </div>
+
+      <div class="feature" data-aos="fade-up" data-aos-delay="180">
+        <h3>暗黑主题 & 响应式</h3>
+        <p>适配手机和平板，界面清爽、操作流畅，适合演示与教学。</p>
+      </div>
+    </div>
+
+    <div class="footer" data-aos="fade-up" data-aos-delay="240">
+      © 2025 恒星光谱工作台 · 由你托管（Render）
+    </div>
+  </div>
+
+<!-- JS libs -->
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+  AOS.init({duration:600,once:true,mirror:false});
+  // logo 简单动画
+  gsap.from("#logo",{y:-6,rotation:-6,duration:1.4,repeat:-1,yoyo:true,ease:"sine.inOut",opacity:0.98});
+</script>
 </body>
 </html>
