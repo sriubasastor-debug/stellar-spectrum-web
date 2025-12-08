@@ -1,50 +1,45 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>批量 CSV 分析</title>
-    <style>
-        body {
-            background: #0f0f1a;
-            color: white;
-            font-family: "Microsoft YaHei", sans-serif;
-            text-align: center;
-            padding: 60px;
-        }
-        input, button {
-            padding: 10px;
-            font-size: 18px;
-            border-radius: 8px;
-        }
-        button {
-            background: #4ea3ff;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-        }
-        button:hover { background: #77bbff; }
-        .box {
-            background: #1b1b2d;
-            padding: 30px;
-            border-radius: 15px;
-            display: inline-block;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>批量 CSV 分析 • 上传</title>
+<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);color:#eaf2ff;font-family:Inter, "Microsoft Yahei"}
+.container{max-width:920px;margin:30px auto;padding:20px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:18px;border-radius:12px}
+label{display:block;margin-bottom:8px}
+.input-file{display:flex;gap:12px;align-items:center}
+input[type=file]{padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;border:none;color:#eaf2ff}
+.btn{background:linear-gradient(90deg,#6ea8ff,#7b61ff);padding:12px 18px;border-radius:10px;border:none;color:white;font-weight:600}
+.note{margin-top:12px;color:#9fb4d9;font-size:14px}
+a.back{color:#9fb4d9;text-decoration:none}
+</style>
 </head>
-
 <body>
+<div class="container" data-aos="fade-up">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h1>📄 批量 CSV 分析（预览 + 报告）</h1>
+    <a class="back" href="/">← 返回首页</a>
+  </div>
 
-<h1>批量 CSV 恒星分析</h1>
-
-<div class="box">
+  <div class="card">
     <form method="POST" enctype="multipart/form-data">
-        <p>请上传 CSV 文件（包含 spectral/temperature/luminosity）</p>
-
+      <label>选择 CSV 文件（UTF-8 编码，至少包含列 <strong>luminosity</strong>）</label>
+      <div class="input-file">
         <input type="file" name="csvfile" accept=".csv" required>
-        <br><br>
-        <button type="submit">上传并分析</button>
+        <button class="btn" type="submit">上传并预览</button>
+      </div>
+      <p class="note">示例列：<code>spectral,temperature,luminosity</code>。光谱 / 温度任选其一用于推断；光度必须为数字。</p>
     </form>
+  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+AOS.init({duration:600, once:true});
+</script>
 </body>
 </html>
