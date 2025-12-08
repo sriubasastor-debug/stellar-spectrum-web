@@ -1,48 +1,36 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>恒星分析工具</title>
-<style>
-body {
-    margin:0; padding:0;
-    background: radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a);
-    color:white;
-    font-family:"Microsoft Yahei", sans-serif;
-}
-.container {
-    max-width:650px;
-    margin:50px auto;
-    text-align:center;
-}
-h1 {
-    font-size:32px;
-    text-shadow:0 0 10px #7bbdff;
-}
-.btn {
-    display:block;
-    margin:20px auto;
-    padding:15px;
-    width:70%;
-    border:none;
-    border-radius:12px;
-    background:linear-gradient(135deg,#3e8cff,#6a5acd);
-    color:white;
-    font-size:18px;
-    text-decoration:none;
-    box-shadow:0 0 18px rgba(120,150,255,0.4);
-}
-.btn:hover {
-    transform:scale(1.03);
-}
-</style>
+    <meta charset="UTF-8">
+    <title>恒星光谱与 H-R 图分析</title>
+    <style>
+        body {
+            background: #0f0f1a;
+            color: white;
+            font-family: "Microsoft YaHei", sans-serif;
+            text-align: center;
+            padding: 60px;
+        }
+        a.button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #4ea3ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            margin: 20px;
+            font-size: 20px;
+        }
+        a.button:hover { background: #77bbff; }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>🌌 恒星分析中心</h1>
-    <a class="btn" href="/single">🔭 单颗恒星分析</a>
-    <a class="btn" href="/csv">📄 CSV 批量分析 ➜ PDF 报告</a>
-</div>
+
+    <h1>恒星光谱与赫罗图分析系统</h1>
+    <p>请选择操作方式</p>
+
+    <a class="button" href="/single">单颗恒星分析</a>
+    <a class="button" href="/csv">批量 CSV 分析（含 PDF 报告）</a>
+
 </body>
 </html>
