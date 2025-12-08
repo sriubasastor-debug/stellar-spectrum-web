@@ -8,20 +8,22 @@
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
   <style>
     @font-face{font-family:"CHN";src:url("/static/fonts/NotoSansSC-Regular.otf") format("opentype")}
-    body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);font-family:"CHN",sans-serif;color:#eaf2ff;padding:30px}
+    body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);font-family:"CHN",sans-serif;color:#eaf2ff;padding:28px}
     .wrap{max-width:920px;margin:0 auto}
     .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:18px;border-radius:12px}
     input[type=file]{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;color:white;border:none}
-    .btn{margin-top:12px;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#6ea8ff,#7b61ff);color:white;border:none}
+    .btn{margin-top:12px;padding:10px 14px;border-radius:10px;background:linear-gradient(90deg,#6ea8ff,#7b61ff);color:white;border:none;cursor:pointer}
+    .note{color:#9fb4d9;margin-top:10px}
     a.back{color:#9fb4d9;text-decoration:none}
   </style>
 </head>
 <body>
   <div class="wrap" data-aos="fade-up">
     <a class="back" href="/?lang={{lang}}">← {{ '返回' if lang=='zh' else 'Back' }}</a>
+
     <div class="card" data-aos="fade-up" data-aos-delay="60">
       <h1>{{ t('csv') if t else 'CSV 批量分析' }}</h1>
-      <p style="color:#cfe4ff">（CSV 示例列：<code>spectral,temperature,luminosity</code> — temperature 或 spectral 二选一）</p>
+      <p class="note">{{ '请上传 UTF-8 编码的 CSV，包含列：spectral, temperature, luminosity（光度必须是数值）' if lang=='zh' else 'Upload a UTF-8 CSV with columns: spectral, temperature, luminosity (luminosity numeric)' }}</p>
 
       <form method="POST" enctype="multipart/form-data">
         <input type="file" name="csvfile" accept=".csv" required>
