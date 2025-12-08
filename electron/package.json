@@ -1,0 +1,14 @@
+{
+  "name": "stellar-spectrum-desktop",
+  "version": "1.0.0",
+  "description": "Desktop version of Stellar Spectrum Web",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . StellarSpectrumDesktop --platform=win32 --arch=x64 --overwrite"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-packager": "^17.1.1"
+  }
+}
