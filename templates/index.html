@@ -1,208 +1,139 @@
 <!DOCTYPE html>
-<html lang="{{ 'zh' if lang=='zh' else 'en' }}">
+<html lang="{{ 'zh' if lang == 'zh' else 'en' }}">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ t('title') }}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ t('title') if t else '恒星光谱工作台' }}</title>
 
-    <!-- Google Font for Sci-Fi Style -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+  <!-- AOS 动画 -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+  <!-- Google font fallback -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: black;
-            overflow: hidden;
-            font-family: 'Roboto', sans-serif;
-            color: white;
-        }
+  <style>
+    /* 载入本地中文字体（请确保 static/fonts/NotoSansSC-Regular.otf 已存在） */
+    @font-face {
+      font-family: "CHN";
+      src: url("/static/fonts/NotoSansSC-Regular.otf") format("opentype");
+      font-weight: 400;
+      font-style: normal;
+    }
+    :root{
+      --bg1:#020617;
+      --bg2:#071028;
+      --neon:#58a6ff;
+      --accent:#7b61ff;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family: "CHN", "Orbitron", sans-serif;color:#e8f4ff}
+    body{background:radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.04), transparent 10%), linear-gradient(180deg,var(--bg1),var(--bg2));overflow:hidden}
 
-        /* 星空背景 */
-        canvas#starfield {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: -10;
-        }
+    /* starfield canvas full screen */
+    canvas#starfield{position:fixed;inset:0;z-index:0}
 
-        /* 整体容器 */
-        .container {
-            text-align: center;
-            margin-top: 140px;
-            padding: 20px;
-        }
+    /* foreground container */
+    .wrap{position:relative;z-index:5;max-width:1100px;margin:60px auto;padding:28px}
 
-        /* 主标题（霓虹风） */
-        .title {
-            font-size: 48px;
-            margin-bottom: 30px;
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: 3px;
-            text-shadow: 0 0 15px #4ea3ff, 0 0 30px #4ea3ff;
-        }
+    .hero{
+      display:flex;align-items:center;gap:20px;padding:22px;border-radius:16px;background:linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow:0 12px 40px rgba(2,6,23,0.6);backdrop-filter:blur(6px)
+    }
+    .logo{
+      width:96px;height:96px;border-radius:14px;background:linear-gradient(135deg,var(--neon),var(--accent));
+      display:flex;align-items:center;justify-content:center;color:white;font-size:38px;box-shadow:0 8px 30px rgba(80,150,255,0.12)
+    }
+    .meta h1{margin:0;font-size:28px;letter-spacing: -0.5px}
+    .meta p{margin:6px 0 0;color:#bcd6ff}
 
-        /* 副标题 */
-        .subtitle {
-            font-size: 20px;
-            opacity: 0.8;
-            margin-bottom: 60px;
-        }
+    .actions{margin-top:18px;display:flex;gap:12px;flex-wrap:wrap}
+    .btn{padding:12px 18px;border-radius:12px;background:linear-gradient(90deg,var(--neon),var(--accent));color:white;text-decoration:none;font-weight:700;box-shadow:0 10px 30px rgba(60,100,230,0.12)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#bcd6ff}
 
-        /* 卡片容器 */
-        .card-container {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-        }
+    .grid{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+    .card{padding:16px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 30px rgba(2,6,23,0.5)}
+    .card h3{margin:0 0 6px}
+    .card p{margin:0;color:#bcd6ff}
 
-        /* 功能卡片（科幻悬浮效果） */
-        .card {
-            width: 260px;
-            height: 180px;
-            background: rgba(20, 20, 35, 0.8);
-            border-radius: 15px;
-            padding: 25px;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 0 20px rgba(80, 150, 255, 0.4);
-            border: 1px solid rgba(80, 150, 255, 0.6);
-            transition: 0.3s;
-            cursor: pointer;
-            text-decoration: none;
-            color: white;
-        }
+    .footer{margin-top:28px;text-align:center;color:#9fb4d9;font-size:13px}
 
-        /* 卡片内标题 */
-        .card h2 {
-            font-family: 'Orbitron', sans-serif;
-            margin-top: 10px;
-            font-size: 20px;
-            text-shadow: 0 0 10px #4ea3ff;
-        }
-
-        /* 卡片文字 */
-        .card p {
-            margin-top: 10px;
-            font-size: 14px;
-            opacity: 0.8;
-        }
-
-        /* 悬浮动画 */
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 0 30px rgba(120, 180, 255, 0.9);
-        }
-
-        /* 语言切换 */
-        .lang {
-            position: absolute;
-            top: 20px;
-            right: 25px;
-            font-size: 18px;
-        }
-        .lang a {
-            color: #4ea3ff;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-        .lang a:hover {
-            text-shadow: 0 0 10px #4ea3ff;
-        }
-    </style>
+    .lang{position:fixed;right:18px;top:14px;color:#bcd6ff;z-index:10}
+    .lang a{color:var(--neon);text-decoration:none;margin-left:10px}
+    @media (max-width:640px){.hero{flex-direction:column;align-items:flex-start}.logo{width:70px;height:70px}}
+  </style>
 </head>
-
 <body>
+  <canvas id="starfield"></canvas>
 
-<!-- 星空背景 canvas -->
-<canvas id="starfield"></canvas>
+  <div class="lang">
+    <a href="/?lang=zh">中文</a> | <a href="/?lang=en">EN</a>
+  </div>
 
-<!-- 语言切换 -->
-<div class="lang">
-    <a href="/?lang=zh">中文</a> | 
-    <a href="/?lang=en">EN</a>
-</div>
+  <div class="wrap" data-aos="fade-up">
+    <div class="hero" data-aos="zoom-in">
+      <div class="logo" id="logo">☆</div>
+      <div class="meta">
+        <h1>{{ t('title') if t else '恒星光谱工作台' }}</h1>
+        <p>{{ '专业 H–R 可视化 · 批量 CSV → PDF 报告 · 单星演化 GIF' if lang=='zh' else 'Professional H–R visualization · Batch CSV → PDF · Single-star evolution GIF' }}</p>
 
-<!-- 主内容 -->
-<div class="container">
-    <div class="title">{{ t('title') }}</div>
-    <div class="subtitle">
-        {{ '专业 · 科学 · 全功能恒星分析平台' if lang=='zh' else 'Professional · Scientific · Full-featured Stellar Analysis Platform' }}
+        <div class="actions">
+          <a class="btn" href="/single?lang={{lang}}">{{ t('single') if t else '单星分析' }}</a>
+          <a class="btn ghost" href="/csv?lang={{lang}}">{{ t('csv') if t else '批量 CSV' }}</a>
+          <a class="btn ghost" href="/download_desktop">{{ t('download_desktop') if t else '桌面打包说明' }}</a>
+        </div>
+      </div>
     </div>
 
-    <div class="card-container">
-
-        <!-- 单颗恒星分析 -->
-        <a class="card" href="/single?lang={{lang}}">
-            <h2>{{ t('single') }}</h2>
-            <p>{{ '输入光谱 / 温度 / 光度，并生成 H-R 图、半径、质量、演化 GIF' if lang=='zh'
-                else 'Analyze a single star with HR diagram, radius, mass & evolution GIF' }}</p>
-        </a>
-
-        <!-- CSV 批量分析 -->
-        <a class="card" href="/csv?lang={{lang}}">
-            <h2>{{ t('csv') }}</h2>
-            <p>{{ '批量导入 CSV，自动绘制 H-R 图并生成科研级 PDF 报告' if lang=='zh'
-                else 'Batch CSV: auto HR diagram + scientific PDF report' }}</p>
-        </a>
-
-        <!-- 桌面打包说明 -->
-        <a class="card" href="/download_desktop">
-            <h2>{{ t('download_desktop') }}</h2>
-            <p>{{ '下载 PyInstaller / Electron 打包说明' if lang=='zh'
-                else 'Download PyInstaller / Electron packaging guide' }}</p>
-        </a>
-
+    <div class="grid" data-aos="fade-up" data-aos-delay="80">
+      <div class="card">
+        <h3>交互式 CSV 预览</h3>
+        <p>上传 CSV，页面内搜索/排序，直接生成科研级 PDF 报告。</p>
+      </div>
+      <div class="card">
+        <h3>专业 H–R 图</h3>
+        <p>主序带 / 巨星区 / 白矮星区高亮，颜色分类与中文标签。</p>
+      </div>
+      <div class="card">
+        <h3>演化动画</h3>
+        <p>单星可生成演化 GIF，演示主序→红巨→白矮等示意轨迹。</p>
+      </div>
     </div>
-</div>
 
-<!-- 星空背景 JS 动画 -->
-<script>
-const canvas = document.getElementById('starfield');
-const ctx = canvas.getContext('2d');
+    <div class="footer" data-aos="fade-up" data-aos-delay="160">© 2025 星辰工作台</div>
+  </div>
 
-let stars = [];
-let w, h;
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-function resize() {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-}
-resize();
-window.onresize = resize;
+  <script>
+    // init animations
+    AOS.init({duration:700,once:true});
 
-function initStars() {
-    stars = [];
-    for (let i = 0; i < 350; i++) {
-        stars.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            z: Math.random() * 2 + 0.5
-        });
+    // logo subtle animation
+    gsap.from("#logo",{y:-6,rotation:-6,duration:1.4,repeat:-1,yoyo:true,ease:"sine.inOut"});
+
+    // starfield
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let w,h,stars=[];
+    function resize(){w=canvas.width=innerWidth;h=canvas.height=innerHeight}
+    window.addEventListener('resize', resize);
+    resize();
+    function initStars(){stars=[];for(let i=0;i<400;i++){stars.push({x:Math.random()*w,y:Math.random()*h,z:Math.random()*2+0.3})}}
+    initStars();
+    function tick(){
+      ctx.fillStyle='rgba(0,0,8,0.45)';
+      ctx.fillRect(0,0,w,h);
+      ctx.shadowBlur=12;ctx.shadowColor='#4ea3ff';
+      for(let s of stars){
+        ctx.beginPath();ctx.fillStyle='white';ctx.arc(s.x,s.y,s.z,0,Math.PI*2);ctx.fill();
+        s.y += s.z*0.3;
+        if(s.y>h) s.y=0;
+      }
+      requestAnimationFrame(tick);
     }
-}
-initStars();
-
-function animate() {
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, w, h);
-
-    ctx.fillStyle = "white";
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = "#4ea3ff";
-
-    for (let s of stars) {
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.z, 0, Math.PI * 2);
-        ctx.fill();
-
-        s.y += s.z * 0.3;
-        if (s.y > h) s.y = 0;
-    }
-
-    requestAnimationFrame(animate);
-}
-animate();
-</script>
-
+    tick();
+  </script>
 </body>
 </html>
