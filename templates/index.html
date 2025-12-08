@@ -1,164 +1,208 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="{{ 'zh' if lang=='zh' else 'en' }}">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>恒星光谱与 H–R 分析 • 星辰工作台</title>
+    <meta charset="UTF-8">
+    <title>{{ t('title') }}</title>
 
-<!-- AOS 动画 -->
-<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-<!-- Google 字体（替代）-->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Font for Sci-Fi Style -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
 
-<style>
-:root{
-  --bg-1:#071028;
-  --bg-2:#0f1b3a;
-  --card:#0f1724aa;
-  --accent:#6ea8ff;
-  --accent-2:#7b61ff;
-  --glass: rgba(255,255,255,0.04);
-  --muted: #9fb4d9;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family: "Inter", "Microsoft Yahei", sans-serif;
-  background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.08), transparent 10%),
-              radial-gradient(1000px 500px at 90% 85%, rgba(30,64,175,0.06), transparent 10%),
-              linear-gradient(180deg,var(--bg-1),var(--bg-2));
-  color:#eaf2ff;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  padding:40px 16px;
-}
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            overflow: hidden;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+        }
 
-/* 容器 */
-.container{
-  max-width:1050px;
-  margin:0 auto;
-}
+        /* 星空背景 */
+        canvas#starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -10;
+        }
 
-/* 顶部 card */
-.hero{
-  display:flex;
-  gap:20px;
-  align-items:center;
-  padding:22px;
-  border-radius:16px;
-  background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-  box-shadow: 0 8px 30px rgba(2,6,23,0.6);
-  backdrop-filter: blur(6px);
-}
+        /* 整体容器 */
+        .container {
+            text-align: center;
+            margin-top: 140px;
+            padding: 20px;
+        }
 
-/* logo circle */
-.logo{
-  width:88px;height:88px;border-radius:12px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(124,58,237,0.24);
-  transform: translateY(0);
-}
-.logo h1{margin:0;font-size:28px;color:white;letter-spacing: -1px}
-.hero .meta{flex:1}
-.hero h2{margin:0;font-size:20px}
-.hero p{margin:6px 0 0;color:var(--muted)}
+        /* 主标题（霓虹风） */
+        .title {
+            font-size: 48px;
+            margin-bottom: 30px;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px #4ea3ff, 0 0 30px #4ea3ff;
+        }
 
-/* 操作按钮组 */
-.actions{
-  display:flex;
-  gap:14px;
-  margin-top:18px;
-}
-.btn{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:12px 18px;border-radius:12px;
-  color:white;text-decoration:none;font-weight:600;
-  background:linear-gradient(90deg,var(--accent),var(--accent-2));
-  box-shadow:0 8px 24px rgba(79, 123, 255, 0.12);
-  transition:transform .22s ease, box-shadow .22s ease;
-}
-.btn.secondary{
-  background:transparent;border:1px solid rgba(255,255,255,0.06); color:var(--muted);
-  box-shadow:none;
-}
-.btn:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(60,100,200,0.16)}
-.small{font-size:14px;padding:9px 14px;border-radius:10px}
+        /* 副标题 */
+        .subtitle {
+            font-size: 20px;
+            opacity: 0.8;
+            margin-bottom: 60px;
+        }
 
-/* cards grid */
-.grid{
-  margin-top:26px;
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap:16px;
-}
+        /* 卡片容器 */
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
 
-/* feature card */
-.feature{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  padding:16px;border-radius:12px;
-  box-shadow: 0 8px 20px rgba(3,10,30,0.6);
-}
-.feature h3{margin:0 0 6px}
-.feature p{margin:0;color:var(--muted);font-size:14px}
+        /* 功能卡片（科幻悬浮效果） */
+        .card {
+            width: 260px;
+            height: 180px;
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 20px rgba(80, 150, 255, 0.4);
+            border: 1px solid rgba(80, 150, 255, 0.6);
+            transition: 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
 
-/* footer */
-.footer{margin-top:28px;text-align:center;color:var(--muted);font-size:13px}
+        /* 卡片内标题 */
+        .card h2 {
+            font-family: 'Orbitron', sans-serif;
+            margin-top: 10px;
+            font-size: 20px;
+            text-shadow: 0 0 10px #4ea3ff;
+        }
 
-/* responsive */
-@media (max-width:640px){
-  .hero{flex-direction:column;align-items:flex-start}
-  .logo{width:64px;height:64px}
-}
-</style>
+        /* 卡片文字 */
+        .card p {
+            margin-top: 10px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* 悬浮动画 */
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 30px rgba(120, 180, 255, 0.9);
+        }
+
+        /* 语言切换 */
+        .lang {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 18px;
+        }
+        .lang a {
+            color: #4ea3ff;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .lang a:hover {
+            text-shadow: 0 0 10px #4ea3ff;
+        }
+    </style>
 </head>
+
 <body>
-  <div class="container">
-    <div class="hero" data-aos="fade-up">
-      <div class="logo" id="logo">
-        <h1>⭐</h1>
-      </div>
-      <div class="meta">
-        <h2>恒星光谱与 H–R 分析 • 星辰工作台</h2>
-        <p>单星分析 • 批量 CSV → PDF 报告 • 交互式预览 • 专业 H–R 可视化</p>
 
-        <div class="actions" style="margin-top:12px">
-          <a class="btn" href="/single">🔭 单星分析</a>
-          <a class="btn secondary" href="/csv">📄 批量 CSV（上传/预览/报告）</a>
-        </div>
-      </div>
+<!-- 星空背景 canvas -->
+<canvas id="starfield"></canvas>
+
+<!-- 语言切换 -->
+<div class="lang">
+    <a href="/?lang=zh">中文</a> | 
+    <a href="/?lang=en">EN</a>
+</div>
+
+<!-- 主内容 -->
+<div class="container">
+    <div class="title">{{ t('title') }}</div>
+    <div class="subtitle">
+        {{ '专业 · 科学 · 全功能恒星分析平台' if lang=='zh' else 'Professional · Scientific · Full-featured Stellar Analysis Platform' }}
     </div>
 
-    <div class="grid" style="margin-top:20px">
-      <div class="feature" data-aos="fade-up" data-aos-delay="60">
-        <h3>交互式星表预览</h3>
-        <p>上传 CSV 后即可在浏览器内查看、搜索、排序并生成 PDF 报告。</p>
-      </div>
+    <div class="card-container">
 
-      <div class="feature" data-aos="fade-up" data-aos-delay="120">
-        <h3>专业 H–R 视觉化</h3>
-        <p>主序带 / 巨星区 / 白矮星区高亮，点位按分类着色并带中文标签。</p>
-      </div>
+        <!-- 单颗恒星分析 -->
+        <a class="card" href="/single?lang={{lang}}">
+            <h2>{{ t('single') }}</h2>
+            <p>{{ '输入光谱 / 温度 / 光度，并生成 H-R 图、半径、质量、演化 GIF' if lang=='zh'
+                else 'Analyze a single star with HR diagram, radius, mass & evolution GIF' }}</p>
+        </a>
 
-      <div class="feature" data-aos="fade-up" data-aos-delay="180">
-        <h3>暗黑主题 & 响应式</h3>
-        <p>适配手机和平板，界面清爽、操作流畅，适合演示与教学。</p>
-      </div>
+        <!-- CSV 批量分析 -->
+        <a class="card" href="/csv?lang={{lang}}">
+            <h2>{{ t('csv') }}</h2>
+            <p>{{ '批量导入 CSV，自动绘制 H-R 图并生成科研级 PDF 报告' if lang=='zh'
+                else 'Batch CSV: auto HR diagram + scientific PDF report' }}</p>
+        </a>
+
+        <!-- 桌面打包说明 -->
+        <a class="card" href="/download_desktop">
+            <h2>{{ t('download_desktop') }}</h2>
+            <p>{{ '下载 PyInstaller / Electron 打包说明' if lang=='zh'
+                else 'Download PyInstaller / Electron packaging guide' }}</p>
+        </a>
+
     </div>
+</div>
 
-    <div class="footer" data-aos="fade-up" data-aos-delay="240">
-      © 2025 恒星光谱工作台 · 由你托管（Render）
-    </div>
-  </div>
-
-<!-- JS libs -->
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<!-- 星空背景 JS 动画 -->
 <script>
-  AOS.init({duration:600,once:true,mirror:false});
-  // logo 简单动画
-  gsap.from("#logo",{y:-6,rotation:-6,duration:1.4,repeat:-1,yoyo:true,ease:"sine.inOut",opacity:0.98});
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+
+let stars = [];
+let w, h;
+
+function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+function initStars() {
+    stars = [];
+    for (let i = 0; i < 350; i++) {
+        stars.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z: Math.random() * 2 + 0.5
+        });
+    }
+}
+initStars();
+
+function animate() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.fillStyle = "white";
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = "#4ea3ff";
+
+    for (let s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.z, 0, Math.PI * 2);
+        ctx.fill();
+
+        s.y += s.z * 0.3;
+        if (s.y > h) s.y = 0;
+    }
+
+    requestAnimationFrame(animate);
+}
+animate();
 </script>
+
 </body>
 </html>
