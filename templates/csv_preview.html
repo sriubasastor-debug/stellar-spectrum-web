@@ -1,63 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ 'zh' if lang=='zh' else 'en' }}">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ t('csv') }}</title>
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <style>
-        body{ background:#0f0f1a;color:white;font-family:Arial;padding:20px; }
-        table { color:white; }
-        img{ margin-top:20px;border:2px solid #666; }
-        .btn { background:#3e8cff;color:white;padding:8px 18px;border-radius:6px;text-decoration:none; }
-        .lang { position:absolute;top:15px;right:20px; }
-        .lang a { color:#3e8cff;margin-left:8px;text-decoration:none; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CSV 预览</title>
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+
+  <style>
+    @font-face{font-family:"CHN";src:url("/static/fonts/NotoSansSC-Regular.otf") format("opentype")}
+    body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);font-family:"CHN",sans-serif;color:#eaf2ff;padding:18px}
+    .wrap{max-width:1200px;margin:0 auto}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:16px;border-radius:12px}
+    table.dataTable thead th{background:#12243f;color:#fff}
+    .btn{padding:10px 14px;border-radius:8px;background:linear-gradient(90deg,#6ea8ff,#7b61ff);color:white;border:none}
+    .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+    .hrimg{max-width:100%;border-radius:8px;margin-top:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+    a.back{color:#9fb4d9;text-decoration:none}
+  </style>
 </head>
 <body>
-    <div class="lang">
-        <a href="/csv?lang=zh">中文</a> | <a href="/csv?lang=en">EN</a>
+  <div class="wrap" data-aos="fade-up">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <a class="back" href="/csv?lang={{lang}}">← {{ '返回' if lang=='zh' else 'Back' }}</a>
+        <h1 style="margin:6px 0 0">{{ 'CSV 分析结果' if lang=='zh' else 'CSV Preview' }}</h1>
+        <div style="color:#9fb4d9">{{ '文件：' if lang=='zh' else 'File:' }} {{ original_name }} · {{ stats.total }} {{ '条' if lang=='zh' else 'rows' }}</div>
+      </div>
+
+      <div class="controls">
+        <form method="POST" action="/generate_pdf?lang={{lang}}">
+          <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
+          <input type="hidden" name="original_name" value="{{ original_name }}">
+          <button class="btn" type="submit">{{ '生成 PDF 报告' if lang=='zh' else 'Generate PDF Report' }}</button>
+        </form>
+
+        <a class="btn" href="/?lang={{lang}}">{{ '返回首页' if lang=='zh' else 'Home' }}</a>
+      </div>
     </div>
 
-    <h1>{{ t('csv') }}</h1>
-
-    <table id="table" class="display">
+    <div class="card" style="margin-top:12px">
+      <table id="preview-table" class="display" style="width:100%">
         <thead>
-            <tr>
-                <th>#</th>
-                <th>{{ t('spectrum') }}</th>
-                <th>{{ t('temperature') }}</th>
-                <th>{{ t('luminosity') }}</th>
-                <th>{{ t('class') }}</th>
-            </tr>
+          <tr>
+            <th>#</th>
+            <th>{{ '光谱' if lang=='zh' else 'Spectrum' }}</th>
+            <th>{{ '温度 (K)' if lang=='zh' else 'Temperature (K)' }}</th>
+            <th>{{ '光度 (L☉)' if lang=='zh' else 'Luminosity (L☉)' }}</th>
+            <th>{{ '分类' if lang=='zh' else 'Class' }}</th>
+          </tr>
         </thead>
         <tbody>
-            {% for r in preview_table %}
-            <tr>
-                <td>{{ r.index }}</td>
-                <td>{{ r.spectral }}</td>
-                <td>{{ r.temperature }}</td>
-                <td>{{ r.luminosity }}</td>
-                <td>{{ r.professional }}</td>
-            </tr>
-            {% endfor %}
+          {% for row in preview_table %}
+          <tr>
+            <td>{{ row.index }}</td>
+            <td>{{ row.spectral or '—' }}</td>
+            <td>{% if row.temperature is none %}—{% else %}{{ '%.1f'|format(row.temperature) }}{% endif %}</td>
+            <td>{% if row.luminosity is none %}—{% else %}{{ '%.4g'|format(row.luminosity) }}{% endif %}</td>
+            <td>{{ row.professional }}</td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
 
-    <h2>H–R 图</h2>
-    <img src="data:image/png;base64,{{ hr_image }}" width="560">
+      <div style="margin-top:18px;text-align:center">
+        <h3>{{ '综合 H–R 图' if lang=='zh' else 'Combined H–R Diagram' }}</h3>
+        {% if hr_image %}
+          <img class="hrimg" src="data:image/png;base64,{{ hr_image }}" alt="HR 图">
+        {% else %}
+          <div style="padding:18px;border-radius:8px;background:rgba(255,255,255,0.02);color:#cfe4ff">后端未返回 HR 图</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
-    <form method="POST" action="/generate_pdf?lang={{lang}}">
-        <input type="hidden" name="csv_b64" value="{{ csv_b64 }}">
-        <input type="hidden" name="original_name" value="{{ original_name }}">
-        <button class="btn" type="submit">生成 PDF</button>
-    </form>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script>
-        $(document).ready( function () {
-            $('#table').DataTable();
-        });
-    </script>
+  <script>
+    AOS.init({duration:600,once:true});
+    $(document).ready(function(){
+      $('#preview-table').DataTable({
+        responsive:true,
+        pageLength:25,
+        order:[[0,"asc"]],
+        language:{
+          "search": "{{ '搜索：' if lang=='zh' else 'Search:' }}",
+          "lengthMenu": "{{ '每页显示 _MENU_ 条' if lang=='zh' else 'Show _MENU_ entries' }}",
+          "info": "{{ '显示 _START_ 到 _END_ / _TOTAL_ 条' if lang=='zh' else 'Showing _START_ to _END_ of _TOTAL_' }}",
+          "paginate": { "first": "首页", "last": "尾页", "next": "下一页", "previous": "上一页" }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
