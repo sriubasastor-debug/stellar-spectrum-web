@@ -346,8 +346,16 @@ def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
     for r in results:
         story.append(Paragraph(f"编号: {r['index']}", styles['Heading3']))
         story.append(Paragraph(f"光谱: {r['spectral'] or '—'}", styles['Normal']))
-        story.append(Paragraph(f"温度 (K): {(f'{r['temperature']:.1f}' if r['temperature'] is not None else '—')}", styles['Normal']))
-        story.append(Paragraph(f"光度 (L☉): {(f'{r['luminosity']:.4g}' if r['luminosity'] is not None else '—')}", styles['Normal']))
+        # 温度
+        if r["temperature"] is not None:
+            story.append(Paragraph(f"温度 (K): {r['temperature']:.1f}", styles['Normal']))
+        else:
+            story.append(Paragraph("温度 (K): —", styles['Normal']))
+        # 光度
+        if r["luminosity"] is not None:
+            story.append(Paragraph(f"光度 (L☉): {r['luminosity']:.4g}", styles['Normal']))
+        else:
+            story.append(Paragraph("光度 (L☉): —", styles['Normal']))
         story.append(Paragraph(f"分类: {r['professional']}", styles['Normal']))
         R = estimate_radius(r['luminosity'], r['temperature'])
         M = estimate_mass(r['luminosity'])
@@ -577,4 +585,5 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
