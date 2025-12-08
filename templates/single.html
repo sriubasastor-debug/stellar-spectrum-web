@@ -1,79 +1,48 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>单星分析 • 恒星光谱工作台</title>
-
-<link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0f1724; --card:#0b1220; --muted:#9fb4d9; --accent:#6ea8ff; --glass: rgba(255,255,255,0.03)}
-*{box-sizing:border-box}
-body{margin:0;background:linear-gradient(180deg,#071028,#0b1326);color:#eaf2ff;font-family:Inter, "Microsoft Yahei"}
-.container{max-width:980px;margin:28px auto;padding:18px}
-.header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.header h1{margin:0}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-input,select{width:100%;padding:10px;border-radius:8px;border:none;background:var(--glass);color:#eaf2ff}
-.btn{margin-top:12px;padding:12px 16px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),#7b61ff);color:white;font-weight:600}
-.result-box{margin-top:18px;padding:12px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.03)}
-img.hrimg{width:100%;border-radius:10px;margin-top:12px;box-shadow:0 8px 30px rgba(30,60,120,0.25)}
-@media (max-width:720px){.form-row{grid-template-columns:1fr}}
-</style>
+    <meta charset="UTF-8">
+    <title>{{ t('single') }}</title>
+    <style>
+        body { background:#0f0f1a;color:white;font-family:Arial;padding:20px; }
+        input { padding:6px;margin:5px;width:200px;border-radius:6px;border:none; }
+        .btn { padding:8px 15px;background:#3e8cff;color:white;border-radius:6px;text-decoration:none;cursor:pointer;border:none; }
+        img { margin-top:25px;border:2px solid #555; }
+        a { color:#5aa2ff; }
+        .lang { position:absolute;top:15px;right:20px; }
+        .lang a { color:#3e8cff;margin-left:8px;text-decoration:none; }
+    </style>
 </head>
 <body>
-<div class="container">
-  <div class="header" data-aos="fade-down">
-    <h1>🔭 单颗恒星分析</h1>
-    <a href="/" style="color:var(--muted);text-decoration:none">← 返回首页</a>
-  </div>
+    <div class="lang">
+        <a href="/single?lang=zh">中文</a> | <a href="/single?lang=en">EN</a>
+    </div>
 
-  <div class="card" data-aos="fade-up">
+    <h1>{{ t('single') }}</h1>
+
     <form method="POST">
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:220px">
-          <label>光谱类型（例如 G2）</label>
-          <input name="spectral" placeholder="G2 / A0 等">
-        </div>
-        <div style="flex:1;min-width:220px">
-          <label>温度 (K)（若填写优先）</label>
-          <input name="temperature" type="number" placeholder="5800">
-        </div>
-        <div style="flex:1;min-width:220px">
-          <label>光度 (L☉)</label>
-          <input name="luminosity" type="number" step="0.0001" required placeholder="1.0">
-        </div>
-      </div>
+        <p>{{ t('spectrum') }}: <input name="spectral"></p>
+        <p>{{ t('temperature') }}: <input name="temperature"></p>
+        <p>{{ t('luminosity') }}: <input name="luminosity"></p>
 
-      <button class="btn" type="submit">生成分析并绘制 H–R 图</button>
+        <p><button class="btn" type="submit">提交 Submit</button></p>
+
+        <p><button class="btn" type="submit" name="do_anim" value="1">{{ t('generate_anim') }}</button></p>
     </form>
 
     {% if result %}
-    <div class="result-box" data-aos="fade-up">
-      <h3>分析结果</h3>
-      <p>光谱：<strong>{{ result.spectral or "—" }}</strong></p>
-      <p>温度：<strong>{{ result.temperature }}</strong> K</p>
-      <p>光度：<strong>{{ result.luminosity }}</strong> L☉</p>
-      <p>专业分类：<strong>{{ result.category }}</strong></p>
-
-      <div>
-        <h4 style="margin-top:12px">H–R 图</h4>
-        {% if hr_image %}
-          <img class="hrimg" src="data:image/png;base64,{{ hr_image }}" alt="HR 图">
-        {% else %}
-          <div style="padding:18px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--muted)">图像暂无（后端没有返回）</div>
-        {% endif %}
-      </div>
-    </div>
+    <h2>结果 / Result</h2>
+    <p>{{ t('spectrum') }}: {{ result.spectral }}</p>
+    <p>{{ t('temperature') }}: {{ result.temperature }}</p>
+    <p>{{ t('luminosity') }}: {{ result.luminosity }}</p>
+    <p>{{ t('class') }}: {{ result.professional }}</p>
+    <p>{{ t('radius') }}: {{ result.radius }}</p>
+    <p>{{ t('mass') }}: {{ result.mass }}</p>
     {% endif %}
-  </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-<script>
-  AOS.init({duration:600, once:true});
-</script>
+    {% if hr_image %}
+    <h2>H–R 图</h2>
+    <img src="data:image/png;base64,{{hr_image}}" width="560">
+    {% endif %}
 </body>
 </html>
