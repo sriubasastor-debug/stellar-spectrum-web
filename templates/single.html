@@ -1,64 +1,72 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>单星分析</title>
-<style>
-body{
-    background:radial-gradient(circle at 20% 30%, #1d2b64, #1a1a1a);
-    color:white;
-    font-family:"Microsoft Yahei";
-}
-.container{
-    max-width:700px;
-    margin:40px auto;
-    background:rgba(255,255,255,0.06);
-    padding:25px;
-    border-radius:14px;
-}
-input,select{
-    width:100%; padding:10px;
-    margin-top:6px;
-    border:none; border-radius:8px;
-}
-button{
-    width:100%; padding:12px;
-    margin-top:15px;
-    background:linear-gradient(135deg,#3e8cff,#6a5acd);
-    color:white; border:none; border-radius:10px;
-    font-size:16px;
-}
-img{
-    margin-top:20px;
-    width:100%; border-radius:9px;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>单颗恒星分析</title>
+    <style>
+        body {
+            background: #0f0f1a;
+            color: white;
+            font-family: "Microsoft YaHei", sans-serif;
+            padding: 40px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 8px;
+            border-radius: 5px;
+        }
+        button {
+            background: #4ea3ff;
+            border: none;
+            color: white;
+            padding: 10px 25px;
+        }
+        button:hover { background: #77bbff; }
+        .container { max-width: 800px; margin: auto; }
+        .hr-box { margin-top: 40px; text-align: center; }
+    </style>
 </head>
 <body>
+
 <div class="container">
-<h2>🔭 单颗恒星分析</h2>
+    <h1>单颗恒星光谱分析</h1>
 
-<form method="post">
-    <label>光谱类型（如 G2）</label>
-    <input type="text" name="spectral">
+    <form method="POST">
+        <p>（光谱 与 温度 任选其一即可）</p>
 
-    <label>温度（可选，会覆盖光谱）</label>
-    <input type="number" name="temperature">
+        <label>光谱类型：</label>
+        <input type="text" name="spectral" placeholder="如 G2、K5">
 
-    <label>光度（L☉）</label>
-    <input type="number" name="luminosity" required>
+        <br>
 
-    <button type="submit">生成分析</button>
-</form>
+        <label>温度 (K)：</label>
+        <input type="number" name="temperature" placeholder="如 5800">
 
-{% if result %}
-<div style="margin-top:15px;">{{ result | safe }}</div>
-{% endif %}
+        <br>
 
-{% if hr_image %}
-<img src="data:image/png;base64,{{ hr_image }}">
-{% endif %}
+        <label>光度 (L☉)：</label>
+        <input type="number" name="luminosity" step="0.0001" placeholder="如 1.2">
+
+        <br><br>
+
+        <button type="submit">开始分析</button>
+    </form>
+
+    {% if result %}
+    <h2>分析结果</h2>
+    <p>光谱：{{ result.spectral }}</p>
+    <p>温度：{{ result.temperature }}</p>
+    <p>光度：{{ result.luminosity }}</p>
+    <p><b>分类：{{ result.category }}</b></p>
+
+    <div class="hr-box">
+        <h3>H–R 图</h3>
+        <img src="data:image/png;base64,{{ hr_image }}" style="width:80%;">
+    </div>
+    {% endif %}
+
 </div>
+
 </body>
 </html>
