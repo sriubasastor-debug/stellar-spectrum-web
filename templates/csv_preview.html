@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CSV 预览</title>
+  <title>{{ 'CSV 预览' if lang=='zh' else 'CSV Preview' }}</title>
 
-  <!-- DataTables -->
+  <!-- DataTables & AOS -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 
@@ -15,7 +15,7 @@
     .wrap{max-width:1200px;margin:0 auto}
     .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));padding:16px;border-radius:12px}
     table.dataTable thead th{background:#12243f;color:#fff}
-    .btn{padding:10px 14px;border-radius:8px;background:linear-gradient(90deg,#6ea8ff,#7b61ff);color:white;border:none}
+    .btn{padding:10px 14px;border-radius:8px;background:linear-gradient(90deg,#6ea8ff,#7b61ff);color:white;border:none;cursor:pointer}
     .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
     .hrimg{max-width:100%;border-radius:8px;margin-top:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
     a.back{color:#9fb4d9;text-decoration:none}
@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:12px" data-aos="fade-up" data-aos-delay="60">
       <table id="preview-table" class="display" style="width:100%">
         <thead>
           <tr>
@@ -91,7 +91,8 @@
           "search": "{{ '搜索：' if lang=='zh' else 'Search:' }}",
           "lengthMenu": "{{ '每页显示 _MENU_ 条' if lang=='zh' else 'Show _MENU_ entries' }}",
           "info": "{{ '显示 _START_ 到 _END_ / _TOTAL_ 条' if lang=='zh' else 'Showing _START_ to _END_ of _TOTAL_' }}",
-          "paginate": { "first": "首页", "last": "尾页", "next": "下一页", "previous": "上一页" }
+          "paginate": { "first": "首页", "last": "尾页", "next": "下一页", "previous": "上一页" },
+          "zeroRecords": "{{ '未找到匹配记录' if lang=='zh' else 'No matching records found' }}"
         }
       });
     });
