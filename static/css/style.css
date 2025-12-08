@@ -1,0 +1,74 @@
+/* 全局默认字体（含中文） */
+body {
+    margin: 0;
+    padding: 0;
+    background: #0b0b0f;
+    color: white;
+    font-family: "CHN", "Source Han Sans CN", "Microsoft YaHei", sans-serif;
+}
+
+/* 页面主容器 */
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+/* 标题样式 */
+h1, h2, h3 {
+    text-align: center;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    text-shadow: 0 0 8px rgba(120,170,255,0.8);
+}
+
+/* 表单 */
+form {
+    margin: 20px auto;
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    backdrop-filter: blur(4px);
+}
+
+input, button, select {
+    padding: 10px;
+    margin: 10px;
+    border-radius: 6px;
+    border: none;
+}
+
+/* 提交按钮 */
+button {
+    background: #4ea3ff;
+    color: white;
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+button:hover {
+    background: #7bb8ff;
+}
+
+/* 图片展示 */
+img {
+    display: block;
+    margin: 20px auto;
+    max-width: 95%;
+    border-radius: 12px;
+    box-shadow: 0 0 18px rgba(80, 150, 255, 0.5);
+}
+
+/* 表格美化 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+    background: rgba(255,255,255,0.05);
+}
+
+table th, table td {
+    padding: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
