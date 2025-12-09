@@ -164,78 +164,124 @@ CATEGORY_CN = {
 # H–R 图（多点，返回 base64 PNG） — 改进：中文图例、无每点文本（避免 OOM）
 # ============================================================
 def plot_hr_multi(temps, lums, categories, lang='zh'):
-    # 保证绘图数据有效（替换 None）
+    # 清洗数据
     clean_t = [t if (t is not None and t > 0) else T_SUN for t in temps]
     clean_l = [l if (l is not None and l > 0) else 1.0 for l in lums]
-    clean_cat = [c if c is not None else "Unknown" for c in categories]
 
-    fig, ax = plt.subplots(figsize=(9, 7), facecolor="#0f0f1a")
+    fig, ax = plt.subplots(figsize=(9, 7), facecolor="#0f0f1a", dpi=110)
     ax.set_facecolor("#0f0f1a")
 
-    # 分布参考线（主序参考线）
+    # --- 主序线（高质量） ---
     tgrid = np.logspace(np.log10(2500), np.log10(40000), 500)
     L_ms = 1e-4 * (tgrid ** 3.5)
+    ax.plot(tgrid, L_ms, color="#80cfff", linewidth=2, label="Main Sequence")
 
-    # 分区色块（半透明）
-    ax.fill_between(tgrid, 0.1 * L_ms, 10 * L_ms, color="#4ea3ff", alpha=0.12)
-    ax.fill_between(tgrid, 10 * L_ms, 1e8, color="#ffdd77", alpha=0.12)
-    mask = tgrid > 5000
-    ax.fill_between(tgrid[mask], 1e-8, 0.05 * L_ms[mask], color="#cda8ff", alpha=0.12)
-    ax.plot(tgrid, L_ms, color="#80cfff", linewidth=2)
+    # ============================================================
+    # ★★★★★ 区域划分：主序带 / 白矮星 / 巨星 / 超巨星
+    # ============================================================
 
-    # 颜色映射（保持原有配色）
+    # 主序带：0.1–10 倍主序
+    ax.fill_between(
+        tgrid, 0.1*L_ms, 10*L_ms,
+        color="#3c9aff", alpha=0.18
+    )
+
+    # 白矮星区：低光度 + 高温
+    wd_mask = tgrid > 6000
+    ax.fill_between(
+        tgrid[wd_mask], 1e-6, 0.03 * L_ms[wd_mask],
+        color="#cda8ff", alpha=0.22
+    )
+
+    # 红巨星/巨星区：高光度
+    ax.fill_between(
+        tgrid, 20*L_ms, 1e8,
+        color="#ffb570", alpha=0.18
+    )
+
+    # 超巨星区：极高光度
+    ax.fill_between(
+        tgrid, 200*L_ms, 1e9,
+        color="#ff7f50", alpha=0.16
+    )
+
+    # ============================================================
+    # ★★★★★ 区域标签（中文 / 英文）
+    # ============================================================
+    if lang.startswith('zh'):
+        ax.text(3500, 5e-3, "白矮星区", fontsize=11, color="#e8d7ff")
+        ax.text(4200, 5e2, "巨星区", fontsize=11, color="#ffe0b6")
+        ax.text(6000, 2e3, "主序带", fontsize=12, color="#90d0ff")
+        ax.text(9000, 1e5, "超巨星区", fontsize=11, color="#ffb0a0")
+    else:
+        ax.text(3500, 5e-3, "White Dwarf", fontsize=11, color="#e8d7ff")
+        ax.text(4200, 5e2, "Giant Region", fontsize=11, color="#ffe0b6")
+        ax.text(6000, 2e3, "Main Sequence", fontsize=12, color="#90d0ff")
+        ax.text(9000, 1e5, "Supergiant", fontsize=11, color="#ffb0a0")
+
+    # ============================================================
+    # 绘制星点 + 标签
+    # ============================================================
+
     color_map = {
-        "Main sequence": "#4ea3ff",
-        "Giant": "#ff6b6b",
-        "Hypergiant": "#ff9b27",
-        "White dwarf": "#cda8ff",
-        "Subsequence": "#d0d0d0",
-        "Unknown": "gray"
+        "Main sequence": "#4ea3ff", "主序星": "#4ea3ff",
+        "Giant": "#ff6b6b", "巨星": "#ff6b6b",
+        "Hypergiant": "#ff9b27", "超巨星": "#ff9b27",
+        "White dwarf": "#cda8ff", "白矮星": "#cda8ff",
+        "Subsequence": "#d0d0d0", "Unknown": "gray"
     }
 
-    # 为每个分类只绘制一次图例点（避免大量 text / bbox）
-    plotted = set()
-    for tval, lval, cat in zip(clean_t, clean_l, clean_cat):
+    for t, l, cat in zip(clean_t, clean_l, categories):
         c = color_map.get(cat, "#ffffff")
-        # 绘制点
-        ax.scatter(tval, lval, s=60, color=c, edgecolors="white", linewidths=0.7, zorder=5)
-        # 如果该分类还未添加到 legend，则添加一个透明的点用作 legend handle
-        if cat not in plotted:
-            plotted.add(cat)
-            # 使用空 label（实际图例名称使用中文或英文）
-            label = CATEGORY_CN.get(cat, cat) if lang.startswith('zh') else cat
-            ax.scatter([], [], color=c, label=label)
+        ax.scatter(t, l, s=55, color=c, edgecolors="white", linewidths=0.6, zorder=5)
 
-    # 轴设置
+        # 小标签：T、L 数值
+        try:
+            ax.text(
+                t * 1.04, l * 1.04,
+                f"T={int(t)}K\nL={l:.3g}",
+                fontsize=7, color="white",
+                bbox=dict(facecolor="black", alpha=0.4, pad=2),
+                zorder=6
+            )
+        except:
+            pass
+
+    # ============================================================
+    # 坐标轴（非常详细）
+    # ============================================================
+
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(40000, 2500)
     ax.set_ylim(1e-4, 1e6)
 
-    # 中文/英文坐标轴与标题（字体已通过 plt.rcParams 指定）
+    # 温度详细刻度
+    ax.set_xticks([40000, 20000, 10000, 8000, 6000, 5000, 4000, 3000, 2500])
+    ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    ax.tick_params(axis='x', rotation=45)
+
+    # 光度刻度
+    ax.set_yticks([1e-4,1e-3,1e-2,1e-1,1,1e1,1e2,1e3,1e4,1e5,1e6])
+    ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
     xlabel = "温度 (K)" if lang.startswith('zh') else "Temperature (K)"
     ylabel = "光度 (L☉)" if lang.startswith('zh') else "Luminosity (L☉)"
+    title  = "赫罗图（H–R 图）" if lang.startswith('zh') else "H–R Diagram"
+
     ax.set_xlabel(xlabel, fontsize=13, color="white")
     ax.set_ylabel(ylabel, fontsize=13, color="white")
-    title = "赫罗图（H–R 图）" if lang.startswith('zh') else "H–R Diagram"
     ax.set_title(title, fontsize=16, color="white")
 
+    ax.tick_params(colors="white")
     ax.grid(True, which="both", ls=":", alpha=0.25)
-    ax.tick_params(colors="white", which='both')
 
-    # 图例：使用中文分类名（如果 lang 是中文）
-    legend = ax.legend(facecolor="#202020", edgecolor="white", fontsize=10)
-    for txt in legend.get_texts():
-        txt.set_color("white")
-
-    # 输出 PNG (base64)
     buf = BytesIO()
     plt.tight_layout()
-    fig.savefig(buf, format="png", dpi=160, bbox_inches='tight')
+    fig.savefig(buf, format="png", dpi=180, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode('utf-8')
-
 
 # ============================================================
 # 单星内联 H–R 图（返回 base64） — 也使用更安全的渲染，但显示中文标题/轴
@@ -554,3 +600,4 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
