@@ -296,20 +296,69 @@ def process_csv_text(csv_text):
 # 生成 PDF（使用 reportlab）
 # ============================================================
 def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
+    # ------------------------------
+    # 1. 注册中文字体
+    # ------------------------------
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import os
+
+    font_path_ttf = "static/fonts/NotoSansSC-Regular.ttf"
+    font_name = "CJK"   # 你可以叫任意名字
+
+    if os.path.exists(font_path_ttf):
+        pdfmetrics.registerFont(TTFont(font_name, font_path_ttf))
+        print("✓ PDF 字体加载成功：NotoSansSC-Regular.ttf")
+    else:
+        print("⚠ 未找到字体，将使用 Helvetica（会乱码）")
+        font_name = "Helvetica"
+
+    # ------------------------------
+    # 2. 初始化文档
+    # ------------------------------
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=2*cm,
+        rightMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm
+    )
+
     styles = getSampleStyleSheet()
+
+    # ★★★★★ 关键：修改所有样式为中文字体
+    for k in styles.byName:
+        styles[k].fontName = font_name
+
     story = []
 
-    # Cover
-    story.append(Paragraph("恒星光谱与 H–R 图分析报告" if lang.startswith('zh') else "Stellar Spectra & H–R Report", styles['Title']))
+    # ------------------------------
+    # 3. 封面
+    # ------------------------------
+    story.append(Paragraph(
+        "恒星光谱与 H–R 图分析报告" if lang.startswith('zh') else "Stellar Spectra & H–R Report",
+        styles['Title']
+    ))
     story.append(Paragraph(f"源文件: {filename}", styles['Normal']))
-    story.append(Paragraph(f"生成时间: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC", styles['Normal']))
+    story.append(Paragraph(
+        f"生成时间: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
+        styles['Normal']
+    ))
     story.append(PageBreak())
 
-    # Table
+    # ------------------------------
+    # 4. 表格
+    # ------------------------------
     story.append(Paragraph("数据表格" if lang.startswith('zh') else "Data Table", styles['Heading2']))
-    header = ["编号", "光谱", "温度(K)", "光度(L☉)", "分类"] if lang.startswith('zh') else ["#", "Spectrum", "Temperature(K)", "Luminosity(L☉)", "Class"]
+
+    header = (
+        ["编号", "光谱", "温度(K)", "光度(L☉)", "分类"]
+        if lang.startswith('zh')
+        else ["#", "Spectrum", "Temperature(K)", "Luminosity(L☉)", "Class"]
+    )
+
     table_data = [header]
     for r in results:
         table_data.append([
@@ -319,54 +368,81 @@ def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
             f"{r['luminosity']:.4g}" if r['luminosity'] is not None else "—",
             r["professional"]
         ])
+
     tbl = Table(table_data, repeatRows=1, hAlign='LEFT')
     tbl.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#3e8cff")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.3, colors.gray),
         ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('FONTNAME', (0,0), (-1,-1), font_name),  # ← 强制字体
     ]))
     story.append(tbl)
     story.append(PageBreak())
 
-    # Stats
+    # ------------------------------
+    # 5. 分类统计
+    # ------------------------------
     story.append(Paragraph("分类统计" if lang.startswith('zh') else "Classification Stats", styles['Heading2']))
-    story.append(Paragraph(f"总恒星数: {len(results)}" if lang.startswith('zh') else f"Total stars: {len(results)}", styles['Normal']))
+    story.append(Paragraph(
+        f"总恒星数: {len(results)}" if lang.startswith('zh') else f"Total stars: {len(results)}",
+        styles['Normal']
+    ))
     story.append(PageBreak())
 
-    # HR image
+    # ------------------------------
+    # 6. H-R 图
+    # ------------------------------
     story.append(Paragraph("H–R 图" if lang.startswith('zh') else "H–R Diagram", styles['Heading2']))
+
     hr_img_b64 = plot_hr_multi(temps, lums, cats, lang=lang)
     hr_bytes = base64.b64decode(hr_img_b64)
+
     story.append(RLImage(BytesIO(hr_bytes), width=15*cm, height=11*cm))
     story.append(PageBreak())
 
-    # Per-star details
+    # ------------------------------
+    # 7. 单颗恒星详细分析
+    # ------------------------------
     story.append(Paragraph("每颗恒星详细分析" if lang.startswith('zh') else "Per-star Details", styles['Heading2']))
+
     for r in results:
         story.append(Paragraph(f"编号: {r['index']}", styles['Heading3']))
         story.append(Paragraph(f"光谱: {r['spectral'] or '—'}", styles['Normal']))
+
         # 温度
-        if r["temperature"] is not None:
-            story.append(Paragraph(f"温度 (K): {r['temperature']:.1f}", styles['Normal']))
-        else:
-            story.append(Paragraph("温度 (K): —", styles['Normal']))
+        story.append(Paragraph(
+            f"温度 (K): {r['temperature']:.1f}" if r["temperature"] is not None else "温度 (K): —",
+            styles['Normal']
+        ))
+
         # 光度
-        if r["luminosity"] is not None:
-            story.append(Paragraph(f"光度 (L☉): {r['luminosity']:.4g}", styles['Normal']))
-        else:
-            story.append(Paragraph("光度 (L☉): —", styles['Normal']))
+        story.append(Paragraph(
+            f"光度 (L☉): {r['luminosity']:.4g}" if r["luminosity"] is not None else "光度 (L☉): —",
+            styles['Normal']
+        ))
+
         story.append(Paragraph(f"分类: {r['professional']}", styles['Normal']))
+
         R = estimate_radius(r['luminosity'], r['temperature'])
         M = estimate_mass(r['luminosity'])
-        story.append(Paragraph(f"估算半径 (R☉): {R:.3f}" if R is not None else "估算半径: —", styles['Normal']))
-        story.append(Paragraph(f"估算质量 (M☉): {M:.3f}" if M is not None else "估算质量: —", styles['Normal']))
+
+        story.append(Paragraph(
+            f"估算半径 (R☉): {R:.3f}" if R is not None else "估算半径: —",
+            styles['Normal']
+        ))
+        story.append(Paragraph(
+            f"估算质量 (M☉): {M:.3f}" if M is not None else "估算质量: —",
+            styles['Normal']
+        ))
         story.append(Spacer(1,8))
 
+    # ------------------------------
+    # 8. 输出 PDF
+    # ------------------------------
     doc.build(story)
     buf.seek(0)
     return buf
-
 
 # ============================================================
 # 生成演化 GIF（示意轨迹）
@@ -585,5 +661,6 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
