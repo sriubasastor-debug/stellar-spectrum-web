@@ -1,5 +1,4 @@
-# app.py — Render 可部署稳定版
-
+# app.py — Render 可部署稳定版（GIF 功能已移除；HR 图中文显示优化）
 from flask import Flask, render_template, request, send_file, redirect, url_for, Response
 
 # ========== Matplotlib 字体设置 ==========
@@ -16,25 +15,24 @@ from datetime import datetime
 import tempfile
 import os
 
-from PIL import Image
+# PDF / 图像工具
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, PageBreak
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 
+# Pillow 仍然保留用于在必要时处理图片（PDF 中使用的 PNG）
+from PIL import Image
 
 # ============================================================
 # 1) 先创建 Flask app（必须在最前面，否则会 NameError）
 # ============================================================
-
 app = Flask(__name__)
-
 
 # ============================================================
 # 2) 字体加载（支持 ttf / otf）
 # ============================================================
-
 FONT_PATH_TTF = "static/fonts/NotoSansSC-Regular.ttf"
 FONT_PATH_OTF = "static/fonts/NotoSansSC-Regular.otf"
 
@@ -47,17 +45,16 @@ elif os.path.exists(FONT_PATH_OTF):
 
 if FONT_PATH:
     fm.fontManager.addfont(FONT_PATH)
+    # 使用字体家族名（Matplotlib 会使用已注册的字体文件）
     plt.rcParams["font.family"] = "Noto Sans SC"
     plt.rcParams["axes.unicode_minus"] = False
     print("✓ 字体加载成功：", FONT_PATH)
 else:
     print("⚠ 未找到字体文件，中文可能无法显示")
 
-
 # ============================================================
 # 3) 国际化
 # ============================================================
-
 I18N = {
     "zh": {
         "title": "恒星光谱与 H–R 分析",
@@ -96,9 +93,7 @@ def t(key, lang="zh"):
 # ============================================================
 # 4) 科学函数
 # ============================================================
-
 T_SUN = 5772
-
 
 def spectral_to_temperature(s):
     if not s:
@@ -115,11 +110,13 @@ def spectral_to_temperature(s):
         return T0 - (n/10)*(T0-T1)
     return T0
 
-
 def professional_classification(temp, lum):
     if temp is None or lum is None:
         return "Unknown", None
     L_ms = 1e-4 * temp**3.5
+    # prevent division by zero
+    if L_ms <= 0:
+        return "Unknown", L_ms
     r = lum / L_ms
     if 0.1 <= r <= 10:
         return "Main sequence", L_ms
@@ -131,12 +128,10 @@ def professional_classification(temp, lum):
         return "White dwarf", L_ms
     return "Subsequence", L_ms
 
-
 def estimate_radius(lum, temp):
     if lum is None or temp is None or temp <= 0:
         return None
     return float((lum * (T_SUN/temp)**4)**0.5)
-
 
 def estimate_mass(lum):
     if lum is None or lum <= 0:
@@ -150,61 +145,90 @@ def estimate_mass(lum):
     if 2 <= M3 < 20:
         return float(M3)
     return float(lum/32000)
+
+
 # ============================================================
-# H–R 图（多点，返回 base64 PNG）
+# Helper: 将 English 分类 映射为 中文 显示（仅用于图例）
+# ============================================================
+CATEGORY_CN = {
+    "Main sequence": "主序带/主序星",
+    "Giant": "巨星",
+    "Hypergiant": "超巨星",
+    "White dwarf": "白矮星",
+    "Subsequence": "亚主序/低光度星",
+    "Unknown": "未知"
+}
+
+
+# ============================================================
+# H–R 图（多点，返回 base64 PNG） — 改进：中文图例、无每点文本（避免 OOM）
 # ============================================================
 def plot_hr_multi(temps, lums, categories, lang='zh'):
-    # 保证绘图数据有效
+    # 保证绘图数据有效（替换 None）
     clean_t = [t if (t is not None and t > 0) else T_SUN for t in temps]
     clean_l = [l if (l is not None and l > 0) else 1.0 for l in lums]
+    clean_cat = [c if c is not None else "Unknown" for c in categories]
 
     fig, ax = plt.subplots(figsize=(9, 7), facecolor="#0f0f1a")
     ax.set_facecolor("#0f0f1a")
 
+    # 分布参考线（主序参考线）
     tgrid = np.logspace(np.log10(2500), np.log10(40000), 500)
     L_ms = 1e-4 * (tgrid ** 3.5)
 
-    # region fills & reference line
+    # 分区色块（半透明）
     ax.fill_between(tgrid, 0.1 * L_ms, 10 * L_ms, color="#4ea3ff", alpha=0.12)
     ax.fill_between(tgrid, 10 * L_ms, 1e8, color="#ffdd77", alpha=0.12)
     mask = tgrid > 5000
     ax.fill_between(tgrid[mask], 1e-8, 0.05 * L_ms[mask], color="#cda8ff", alpha=0.12)
     ax.plot(tgrid, L_ms, color="#80cfff", linewidth=2)
 
+    # 颜色映射（保持原有配色）
     color_map = {
-        "Main sequence": "#4ea3ff", "主序星": "#4ea3ff",
-        "Giant": "#ff6b6b", "巨星": "#ff6b6b",
-        "Hypergiant": "#ff9b27", "超巨星": "#ff9b27",
-        "White dwarf": "#cda8ff", "白矮星": "#cda8ff",
-        "Subsequence": "#d0d0d0", "Unknown": "gray"
+        "Main sequence": "#4ea3ff",
+        "Giant": "#ff6b6b",
+        "Hypergiant": "#ff9b27",
+        "White dwarf": "#cda8ff",
+        "Subsequence": "#d0d0d0",
+        "Unknown": "gray"
     }
 
-    for t, l, cat in zip(clean_t, clean_l, categories):
+    # 为每个分类只绘制一次图例点（避免大量 text / bbox）
+    plotted = set()
+    for tval, lval, cat in zip(clean_t, clean_l, clean_cat):
         c = color_map.get(cat, "#ffffff")
-        ax.scatter(t, l, s=50, color=c, edgecolors="white", linewidths=0.6, zorder=5)
-        try:
-            ax.text(t * 1.03, l * 1.03, str(cat), fontsize=8, color=c,
-                    bbox=dict(facecolor="black", alpha=0.45, pad=2))
-        except Exception:
-            pass
+        # 绘制点
+        ax.scatter(tval, lval, s=60, color=c, edgecolors="white", linewidths=0.7, zorder=5)
+        # 如果该分类还未添加到 legend，则添加一个透明的点用作 legend handle
+        if cat not in plotted:
+            plotted.add(cat)
+            # 使用空 label（实际图例名称使用中文或英文）
+            label = CATEGORY_CN.get(cat, cat) if lang.startswith('zh') else cat
+            ax.scatter([], [], color=c, label=label)
 
+    # 轴设置
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(40000, 2500)
     ax.set_ylim(1e-4, 1e6)
 
+    # 中文/英文坐标轴与标题（字体已通过 plt.rcParams 指定）
     xlabel = "温度 (K)" if lang.startswith('zh') else "Temperature (K)"
     ylabel = "光度 (L☉)" if lang.startswith('zh') else "Luminosity (L☉)"
     ax.set_xlabel(xlabel, fontsize=13, color="white")
     ax.set_ylabel(ylabel, fontsize=13, color="white")
-    ax.set_title("赫罗图（H–R 图）" if lang.startswith('zh') else "H–R Diagram", fontsize=16, color="white")
+    title = "赫罗图（H–R 图）" if lang.startswith('zh') else "H–R Diagram"
+    ax.set_title(title, fontsize=16, color="white")
+
     ax.grid(True, which="both", ls=":", alpha=0.25)
     ax.tick_params(colors="white", which='both')
 
-    legend = ax.legend(facecolor="#202020", edgecolor="white", fontsize=9)
-    for ttext in legend.get_texts():
-        ttext.set_color("white")
+    # 图例：使用中文分类名（如果 lang 是中文）
+    legend = ax.legend(facecolor="#202020", edgecolor="white", fontsize=10)
+    for txt in legend.get_texts():
+        txt.set_color("white")
 
+    # 输出 PNG (base64)
     buf = BytesIO()
     plt.tight_layout()
     fig.savefig(buf, format="png", dpi=160, bbox_inches='tight')
@@ -214,45 +238,42 @@ def plot_hr_multi(temps, lums, categories, lang='zh'):
 
 
 # ============================================================
-# 单星内联 H–R 图（返回 base64）
+# 单星内联 H–R 图（返回 base64） — 也使用更安全的渲染，但显示中文标题/轴
 # ============================================================
 def plot_single_inline(temp, lum, classification, lang='zh'):
-    # 安全参数
     T = temp if (temp is not None and temp > 0) else T_SUN
     L = lum if (lum is not None and lum > 0) else 1.0
 
-    # 小尺寸 + 低 DPI = Render 不会 OOM
-    fig, ax = plt.subplots(figsize=(4.2, 3.6), dpi=80, facecolor="#0f0f1a")
+    fig, ax = plt.subplots(figsize=(5, 4), dpi=100, facecolor="#0f0f1a")
     ax.set_facecolor("#0f0f1a")
 
-    # 仅画一条简单曲线（不密集）
-    tgrid = np.logspace(np.log10(2500), np.log10(40000), 120)
+    tgrid = np.logspace(np.log10(2500), np.log10(40000), 180)
     L_ms = 1e-4 * (tgrid ** 3.5)
-    ax.plot(tgrid, L_ms, color="#5bbcff", linewidth=1)
+    ax.plot(tgrid, L_ms, color="#80cfff", linewidth=1.2)
 
-    # 绘制用户点（简单散点）
-    ax.scatter([T], [L], s=50, color="red")
+    ax.scatter([T], [L], c="red", s=90, edgecolors="white", linewidth=1.0, zorder=6)
 
-    # 不使用 text()！！！—— 彻底避免 OOM 问题
-    # 不使用 xlabel / ylabel（避免字体加载 + bbox 计算）
-    # 不使用 grid（网格会创建大量 line object）
-
-    # 对数轴设置
+    # 只在标题/坐标轴处显示中文（不会为每个点绘制文本，避免 OOM）
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(40000, 2500)
-    ax.set_ylim(1e-4, 1e4)  # 缩小范围，减少像素计算压力
+    ax.set_ylim(1e-4, 1e6)
 
-    # 仅设置极简样式
-    ax.tick_params(colors="white", labelsize=7)
+    ax.set_xlabel("温度 (K)" if lang.startswith('zh') else "Temperature (K)", color="white")
+    ax.set_ylabel("光度 (L☉)" if lang.startswith('zh') else "Luminosity (L☉)", color="white")
+    ax.set_title("赫罗图（H–R 图）" if lang.startswith('zh') else "H–R Diagram", color="white")
 
-    # 输出 PNG
+    ax.grid(True, ls=":", alpha=0.25)
+    ax.tick_params(colors="white")
+
+    # 输出
     buf = BytesIO()
-    fig.savefig(buf, format='png', dpi=80, bbox_inches='tight')
+    plt.tight_layout()
+    fig.savefig(buf, format='png', dpi=140, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
-
     return base64.b64encode(buf.getvalue()).decode('utf-8')
+
 
 # ============================================================
 # CSV 解析与处理
@@ -300,72 +321,42 @@ def process_csv_text(csv_text):
 
 
 # ============================================================
-# 生成 PDF（使用 reportlab）
+# 生成 PDF（使用 reportlab） — 保留并确保中文在 PDF 中正常显示
 # ============================================================
 def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
-    # ------------------------------
-    # 1. 注册中文字体
-    # ------------------------------
+    # 注册中文字体供 reportlab 使用
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
-    import os
 
     font_path_ttf = "static/fonts/NotoSansSC-Regular.ttf"
-    font_name = "CJK"   # 你可以叫任意名字
+    font_name = "CJK"
 
     if os.path.exists(font_path_ttf):
-        pdfmetrics.registerFont(TTFont(font_name, font_path_ttf))
-        print("✓ PDF 字体加载成功：NotoSansSC-Regular.ttf")
+        try:
+            pdfmetrics.registerFont(TTFont(font_name, font_path_ttf))
+        except Exception as e:
+            print("PDF font registration error:", e)
+            font_name = "Helvetica"
     else:
-        print("⚠ 未找到字体，将使用 Helvetica（会乱码）")
         font_name = "Helvetica"
 
-    # ------------------------------
-    # 2. 初始化文档
-    # ------------------------------
     buf = BytesIO()
-    doc = SimpleDocTemplate(
-        buf,
-        pagesize=A4,
-        leftMargin=2*cm,
-        rightMargin=2*cm,
-        topMargin=2*cm,
-        bottomMargin=2*cm
-    )
-
+    doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
     styles = getSampleStyleSheet()
 
-    # ★★★★★ 关键：修改所有样式为中文字体
+    # 用中文字体覆盖样式中的字体
     for k in styles.byName:
         styles[k].fontName = font_name
 
     story = []
 
-    # ------------------------------
-    # 3. 封面
-    # ------------------------------
-    story.append(Paragraph(
-        "恒星光谱与 H–R 图分析报告" if lang.startswith('zh') else "Stellar Spectra & H–R Report",
-        styles['Title']
-    ))
+    story.append(Paragraph("恒星光谱与 H–R 图分析报告" if lang.startswith('zh') else "Stellar Spectra & H–R Report", styles['Title']))
     story.append(Paragraph(f"源文件: {filename}", styles['Normal']))
-    story.append(Paragraph(
-        f"生成时间: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC",
-        styles['Normal']
-    ))
+    story.append(Paragraph(f"生成时间: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC", styles['Normal']))
     story.append(PageBreak())
 
-    # ------------------------------
-    # 4. 表格
-    # ------------------------------
     story.append(Paragraph("数据表格" if lang.startswith('zh') else "Data Table", styles['Heading2']))
-
-    header = (
-        ["编号", "光谱", "温度(K)", "光度(L☉)", "分类"]
-        if lang.startswith('zh')
-        else ["#", "Spectrum", "Temperature(K)", "Luminosity(L☉)", "Class"]
-    )
-
+    header = ["编号", "光谱", "温度(K)", "光度(L☉)", "分类"] if lang.startswith('zh') else ["#", "Spectrum", "Temperature(K)", "Luminosity(L☉)", "Class"]
     table_data = [header]
     for r in results:
         table_data.append([
@@ -375,180 +366,63 @@ def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
             f"{r['luminosity']:.4g}" if r['luminosity'] is not None else "—",
             r["professional"]
         ])
-
     tbl = Table(table_data, repeatRows=1, hAlign='LEFT')
     tbl.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#3e8cff")),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.3, colors.gray),
         ('FONTSIZE', (0,0), (-1,-1), 9),
-        ('FONTNAME', (0,0), (-1,-1), font_name),  # ← 强制字体
+        ('FONTNAME', (0,0), (-1,-1), font_name),
     ]))
     story.append(tbl)
     story.append(PageBreak())
 
-    # ------------------------------
-    # 5. 分类统计
-    # ------------------------------
     story.append(Paragraph("分类统计" if lang.startswith('zh') else "Classification Stats", styles['Heading2']))
-    story.append(Paragraph(
-        f"总恒星数: {len(results)}" if lang.startswith('zh') else f"Total stars: {len(results)}",
-        styles['Normal']
-    ))
+    story.append(Paragraph(f"总恒星数: {len(results)}" if lang.startswith('zh') else f"Total stars: {len(results)}", styles['Normal']))
     story.append(PageBreak())
 
-    # ------------------------------
-    # 6. H-R 图
-    # ------------------------------
     story.append(Paragraph("H–R 图" if lang.startswith('zh') else "H–R Diagram", styles['Heading2']))
-
     hr_img_b64 = plot_hr_multi(temps, lums, cats, lang=lang)
     hr_bytes = base64.b64decode(hr_img_b64)
-
     story.append(RLImage(BytesIO(hr_bytes), width=15*cm, height=11*cm))
     story.append(PageBreak())
 
-    # ------------------------------
-    # 7. 单颗恒星详细分析
-    # ------------------------------
     story.append(Paragraph("每颗恒星详细分析" if lang.startswith('zh') else "Per-star Details", styles['Heading2']))
-
     for r in results:
         story.append(Paragraph(f"编号: {r['index']}", styles['Heading3']))
         story.append(Paragraph(f"光谱: {r['spectral'] or '—'}", styles['Normal']))
 
-        # 温度
-        story.append(Paragraph(
-            f"温度 (K): {r['temperature']:.1f}" if r["temperature"] is not None else "温度 (K): —",
-            styles['Normal']
-        ))
+        if r["temperature"] is not None:
+            story.append(Paragraph(f"温度 (K): {r['temperature']:.1f}", styles['Normal']))
+        else:
+            story.append(Paragraph("温度 (K): —", styles['Normal']))
 
-        # 光度
-        story.append(Paragraph(
-            f"光度 (L☉): {r['luminosity']:.4g}" if r["luminosity"] is not None else "光度 (L☉): —",
-            styles['Normal']
-        ))
+        if r["luminosity"] is not None:
+            story.append(Paragraph(f"光度 (L☉): {r['luminosity']:.4g}", styles['Normal']))
+        else:
+            story.append(Paragraph("光度 (L☉): —", styles['Normal']))
 
         story.append(Paragraph(f"分类: {r['professional']}", styles['Normal']))
-
         R = estimate_radius(r['luminosity'], r['temperature'])
         M = estimate_mass(r['luminosity'])
-
-        story.append(Paragraph(
-            f"估算半径 (R☉): {R:.3f}" if R is not None else "估算半径: —",
-            styles['Normal']
-        ))
-        story.append(Paragraph(
-            f"估算质量 (M☉): {M:.3f}" if M is not None else "估算质量: —",
-            styles['Normal']
-        ))
+        story.append(Paragraph(f"估算半径 (R☉): {R:.3f}" if R is not None else "估算半径: —", styles['Normal']))
+        story.append(Paragraph(f"估算质量 (M☉): {M:.3f}" if M is not None else "估算质量: —", styles['Normal']))
         story.append(Spacer(1,8))
 
-    # ------------------------------
-    # 8. 输出 PDF
-    # ------------------------------
     doc.build(story)
     buf.seek(0)
     return buf
 
+
 # ============================================================
-# 生成演化 GIF（使用 Pillow，不依赖 imageio）
+# NOTE: GIF/Animation function REMOVED on user's request.
+# If you previously had generate_evolution_gif(), it has been deleted.
 # ============================================================
-from PIL import Image
-import gc
 
-def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
-    steps = 30
-    temps = []
-    lums = []
-
-    if mass is None:
-        mass = estimate_mass(init_lum) or 1.0
-
-    m = mass
-    T0 = init_temp if init_temp else T_SUN
-    L0 = init_lum if init_lum else 1.0
-
-    for i in range(steps):
-        frac = i / (steps - 1)
-
-        if m < 1.0:
-            T = T0 * (1 - 0.15*frac)
-            L = L0 * (1 - 0.5*frac)
-        elif m < 8.0:
-            if frac < 0.5:
-                T = T0 * (1 - 0.3*(frac/0.5))
-                L = L0 * (1 + 60*(frac/0.5))
-            else:
-                ff = (frac - 0.5)/0.5
-                T = T0 * (0.7 + 0.3*(1-ff))
-                L = L0 * (1 + 60*(1-ff)) * 0.2
-        else:
-            if frac < 0.5:
-                T = T0 * (1 + 0.4*(frac/0.5))
-                L = L0 * (1 + 2000*(frac/0.5))
-            else:
-                ff = (frac - 0.5)/0.5
-                T = T0 * (1 + 0.4*(1-ff))
-                L = L0 * (2000*(1-ff))
-
-        temps.append(max(1000, T))
-        lums.append(max(1e-8, L))
-
-    # --- render frames ---
-    frames = []
-    for T, L in zip(temps, lums):
-
-        fig, ax = plt.subplots(figsize=(4,3), dpi=70)
-
-        # 背景色
-        ax.set_facecolor('#0f0f1a')
-
-        # 主序线（非常低分辨率）
-        tgrid = np.logspace(np.log10(3000), np.log10(30000), 80)
-        Lms = 1e-4 * (tgrid ** 3.5)
-        ax.plot(tgrid, Lms, color="#80cfff", linewidth=0.8)
-
-        ax.scatter([T], [L], s=40, color="red", edgecolors="white", linewidth=0.6)
-
-        # 关闭所有坐标轴标签（极大减少内存）
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlim(30000, 3000)
-        ax.set_ylim(1e-6, 1e4)
-        ax.grid(False)
-
-        buf = BytesIO()
-        fig.savefig(buf, format="png", dpi=70, bbox_inches='tight', pad_inches=0)
-        buf.seek(0)
-        frames.append(Image.open(buf))
-
-        plt.close(fig)
-        del fig, ax
-        gc.collect()
-
-    gif_bytes = BytesIO()
-    frames[0].save(
-        gif_bytes,
-        save_all=True,
-        append_images=frames[1:],
-        format="GIF",
-        duration=100,
-        loop=0
-    )
-    gif_bytes.seek(0)
-
-    return gif_bytes.getvalue()
 
 # ============================================================
 # Flask 路由（index / single / csv / generate_pdf / download_desktop）
 # ============================================================
-
 @app.route('/')
 def index():
     lang = request.args.get('lang', 'zh')
@@ -565,7 +439,7 @@ def single():
         spectral = request.form.get('spectral', '').strip()
         temp_in = request.form.get('temperature', '').strip()
         lum_in = request.form.get('luminosity', '').strip()
-        do_anim = request.form.get('do_anim', '') == '1'
+        # do_anim handling removed — server will ignore any animation request now
 
         temp = None
         if temp_in:
@@ -582,6 +456,7 @@ def single():
             lum = None
 
         prof, _ = professional_classification(temp, lum)
+        # 使用改进后的单点绘图（含中文轴/标题）
         hr_img = plot_single_inline(temp if temp else T_SUN, lum if lum else 1.0, prof, lang=lang)
         R = estimate_radius(lum, temp)
         M = estimate_mass(lum)
@@ -594,12 +469,6 @@ def single():
             "radius": R,
             "mass": M
         }
-
-        if do_anim:
-            mass_for_anim = M if M is not None else (estimate_mass(lum) or 1.0)
-            anim_bytes = generate_evolution_gif(mass_for_anim, temp if temp else T_SUN, lum if lum else 1.0, lang=lang)
-            return send_file(BytesIO(anim_bytes), mimetype='image/gif', as_attachment=True,
-                             download_name=f"evolution_{datetime.now().strftime('%Y%m%d_%H%M%S')}.gif")
 
     return render_template('single.html', t=lambda k: t(k, lang), lang=lang, hr_image=hr_img, result=result)
 
@@ -670,7 +539,7 @@ def download_desktop():
    - 或将 Flask 与前端一并本地打包：PyInstaller 打包 Flask（带 templates/static），Electron 载入。
 
 4) 依赖:
-   - Python: flask, matplotlib, numpy, reportlab, pillow, pandas
+   - Python: flask, matplotlib, numpy, reportlab, pillow
    - 前端: DataTables/AOS/GSAP 可使用 CDN
 
 如需示例 Electron skeleton 或 PyInstaller 脚本，我可生成示例并打包下载。
@@ -685,10 +554,3 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
-
-
-
-
-
