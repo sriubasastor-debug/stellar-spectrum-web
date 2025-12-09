@@ -151,16 +151,9 @@
           <input name="luminosity" type="number" step="0.0001" placeholder="1.0">
         </div>
 
+        <!-- ⭐ 保留生成分析按钮，删除 GIF 按钮 -->
         <div class="full actions">
           <button class="btn">{{ '生成分析' if lang=='zh' else 'Analyze' }}</button>
-
-          <!-- 🚀 修复 GIF 下载错误：必须加 formtarget="_blank" -->
-          <button class="btn"
-                  name="do_anim"
-                  value="1"
-                  formtarget="_blank">
-            {{ t('generate_anim') }}
-          </button>
         </div>
       </form>
 
