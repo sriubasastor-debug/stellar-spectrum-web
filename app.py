@@ -217,35 +217,42 @@ def plot_hr_multi(temps, lums, categories, lang='zh'):
 # 单星内联 H–R 图（返回 base64）
 # ============================================================
 def plot_single_inline(temp, lum, classification, lang='zh'):
+    # 安全参数
     T = temp if (temp is not None and temp > 0) else T_SUN
     L = lum if (lum is not None and lum > 0) else 1.0
 
-    fig, ax = plt.subplots(figsize=(7, 6), facecolor="#0f0f1a")
+    # 小尺寸 + 低 DPI = Render 不会 OOM
+    fig, ax = plt.subplots(figsize=(4.2, 3.6), dpi=80, facecolor="#0f0f1a")
     ax.set_facecolor("#0f0f1a")
-    tgrid = np.logspace(np.log10(2500), np.log10(40000), 400)
+
+    # 仅画一条简单曲线（不密集）
+    tgrid = np.logspace(np.log10(2500), np.log10(40000), 120)
     L_ms = 1e-4 * (tgrid ** 3.5)
-    ax.plot(tgrid, L_ms, color="#80cfff", linewidth=2)
-    ax.scatter([T], [L], c="red", s=140, edgecolors="white", linewidth=1.2, zorder=6)
-    try:
-        ax.text(T * 1.05, L * 1.05, f"{classification}\nT={int(T)}K\nL={L}", fontsize=10, color="white",
-                bbox=dict(facecolor="black", alpha=0.5, pad=4))
-    except Exception:
-        pass
+    ax.plot(tgrid, L_ms, color="#5bbcff", linewidth=1)
+
+    # 绘制用户点（简单散点）
+    ax.scatter([T], [L], s=50, color="red")
+
+    # 不使用 text()！！！—— 彻底避免 OOM 问题
+    # 不使用 xlabel / ylabel（避免字体加载 + bbox 计算）
+    # 不使用 grid（网格会创建大量 line object）
+
+    # 对数轴设置
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(40000, 2500)
-    ax.set_ylim(1e-4, 1e6)
-    ax.set_xlabel("温度 (K)" if lang.startswith('zh') else "Temperature (K)", color="white")
-    ax.set_ylabel("光度 (L☉)" if lang.startswith('zh') else "Luminosity (L☉)", color="white")
-    ax.grid(True, ls=":", alpha=0.25)
-    ax.tick_params(colors="white")
+    ax.set_ylim(1e-4, 1e4)  # 缩小范围，减少像素计算压力
+
+    # 仅设置极简样式
+    ax.tick_params(colors="white", labelsize=7)
+
+    # 输出 PNG
     buf = BytesIO()
-    plt.tight_layout()
-    fig.savefig(buf, format='png', dpi=160, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=80, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
-    return base64.b64encode(buf.getvalue()).decode('utf-8')
 
+    return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 # ============================================================
 # CSV 解析与处理
@@ -678,6 +685,7 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
