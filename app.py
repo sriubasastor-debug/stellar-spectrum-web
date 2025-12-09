@@ -447,10 +447,11 @@ def generate_pdf(results, temps, lums, cats, filename, lang='zh'):
 # ============================================================
 # 生成演化 GIF（使用 Pillow，不依赖 imageio）
 # ============================================================
-from PIL import Image, ImageSequence
+from PIL import Image
+import gc
 
 def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
-    steps = 60
+    steps = 35   # 优化：减少帧数
     temps = []
     lums = []
 
@@ -466,39 +467,40 @@ def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
         frac = i / (steps - 1)
 
         if m < 1.0:
-            T = T0 * (1 - 0.2 * frac)
-            L = L0 * (1 - 0.8 * frac)
+            T = T0 * (1 - 0.15*frac)
+            L = L0 * (1 - 0.5*frac)
         elif m < 8.0:
             if frac < 0.5:
-                T = T0 * (1 - 0.4 * (frac / 0.5))
-                L = L0 * (1 + 200 * (frac / 0.5))
+                T = T0 * (1 - 0.3*(frac/0.5))
+                L = L0 * (1 + 80*(frac/0.5))
             else:
-                ff = (frac - 0.5) / 0.5
-                T = T0 * (0.6 + 0.4 * (1 - ff))
-                L = L0 * (1 + 200 * (1 - ff)) * 0.1
+                ff = (frac - 0.5)/0.5
+                T = T0 * (0.7 + 0.3*(1-ff))
+                L = L0 * (1 + 80*(1-ff)) * 0.2
         else:
             if frac < 0.5:
-                T = T0 * (1 + 0.6 * (frac / 0.5))
-                L = L0 * (1 + 1e4 * (frac / 0.5))
+                T = T0 * (1 + 0.4*(frac/0.5))
+                L = L0 * (1 + 4000*(frac/0.5))
             else:
-                ff = (frac - 0.5) / 0.5
-                T = T0 * (1 + 0.6 * (1 - ff))
-                L = L0 * (1e4 * (1 - ff))
+                ff = (frac - 0.5)/0.5
+                T = T0 * (1 + 0.4*(1-ff))
+                L = L0 * (4000*(1-ff))
 
         temps.append(max(1000, T))
         lums.append(max(1e-8, L))
 
-    # --- render frames (PNG → PIL Images) ---
-    pil_frames = []
+    # --- render frames ---
+    frames = []
     for T, L in zip(temps, lums):
-        fig, ax = plt.subplots(figsize=(6, 5), facecolor='#0f0f1a')
+
+        fig, ax = plt.subplots(figsize=(4.5, 3.5))  # 小尺寸，降低内存
         ax.set_facecolor('#0f0f1a')
 
-        tgrid = np.logspace(np.log10(2500), np.log10(40000), 400)
+        tgrid = np.logspace(np.log10(2500), np.log10(40000), 300)
         Lms = 1e-4 * (tgrid ** 3.5)
-        ax.plot(tgrid, Lms, color="#80cfff", linewidth=1.3)
+        ax.plot(tgrid, Lms, color="#80cfff", linewidth=1)
 
-        ax.scatter([T], [L], s=80, color="red", edgecolors="white", linewidth=1.1)
+        ax.scatter([T], [L], s=50, color="red", edgecolors="white", linewidth=0.8)
 
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -508,21 +510,23 @@ def generate_evolution_gif(mass, init_temp, init_lum, lang='zh'):
         ax.tick_params(colors="white")
 
         buf = BytesIO()
-        fig.savefig(buf, format="png", dpi=120)
+        fig.savefig(buf, format="png", dpi=80)  # 降低 DPI
         buf.seek(0)
+
+        frames.append(Image.open(buf))
+
         plt.close(fig)
+        del fig, ax
+        gc.collect()  # 强制清理内存
 
-        # Convert PNG → PIL Image
-        pil_frames.append(Image.open(buf).convert("RGBA"))
-
-    # --- save GIF using Pillow ---
+    # --- make GIF with Pillow ---
     gif_bytes = BytesIO()
-    pil_frames[0].save(
+    frames[0].save(
         gif_bytes,
-        format="GIF",
         save_all=True,
-        append_images=pil_frames[1:],
-        duration=100,    # 0.1 秒每帧
+        append_images=frames[1:],
+        format="GIF",
+        duration=100,
         loop=0
     )
     gif_bytes.seek(0)
@@ -669,6 +673,7 @@ if __name__ == '__main__':
     if not FONT_PATH:
         print("⚠ Warning: static/fonts/NotoSansSC-Regular.ttf/.otf not found — Chinese labels may fallback.")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
